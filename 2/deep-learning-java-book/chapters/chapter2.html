@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 2: The Math Blueprint – Linear Algebra &amp; Calculus in Java - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 2: The Math Blueprint – Linear Algebra &amp; Calculus in Java | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 2</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter active" aria-current="page"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 2</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="toc.html" class="btn btn-secondary">Table of Contents</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 2</span>
+                    <h1>The Math Blueprint – Linear Algebra &amp; Calculus in Java</h1>
+                    <p class="chapter-subtitle">Build the vectors, matrices, and derivative checks behind every forward and backward pass.</p>
+                </header>
+
+                <section id="our-plan">
+                    <h2>What We Are Building</h2>
+                    <p>In Chapter 1, a neuron computed a weighted sum and then applied an activation function. This chapter supplies the arithmetic: a <code>Vector</code> for one list of numbers, a <code>Matrix</code> for a rectangular grid, and a tiny <code>Calculus</code> utility for checking slopes. All three use only Java 17 and the standard library.</p>
+                    <p>By the end you can copy three complete source files into <code>src/main/java/com/neuralscratch/math/</code>, compile them with <code>javac</code>, and run an executable check without a third-party test framework. You do not need to know linear algebra beforehand; for each operation, we will start with ordinary numbers, identify the array indices, and then read the Java loop.</p>
+                    <div class="callout callout-info">
+                        <div class="callout-title">One convention throughout</div>
+                        <p>A vector has a <em>size</em>. A matrix has <em>rows × columns</em>. Indices start at zero in Java. Operations create new values; no caller receives a reference to the arrays stored inside these classes.</p>
+                    </div>
+                </section>
+
+                <section id="vectors">
+                    <h2>1. Vectors: One List of Numbers</h2>
+                    <p>A <strong>vector</strong> is an ordered collection such as <code>[2, 3, 4]</code>. In a network it might hold three input features, three weights, or three outputs. Its size is the number of entries; two vectors must have the same size before we add them or take their dot product.</p>
+                    <h3>The dot product, one multiplication at a time</h3>
+                    <p>Pair corresponding entries, multiply each pair, then add the products. For <code>[2, 3, 4]</code> and <code>[5, 6, 7]</code>, the dot product is <code>2×5 + 3×6 + 4×7 = 56</code>. A neuron uses exactly this operation to combine its inputs and weights before adding its bias.</p>
+                    <div class="math-block">a · b = a₀b₀ + a₁b₁ + … + aₙ₋₁bₙ₋₁</div>
+                    <p>The <strong>magnitude</strong> is a vector's length: square each entry, sum the squares, and take the square root. <strong>Normalization</strong> divides every entry by that length, producing a vector of length 1. We reject the zero vector because dividing by its length would mean dividing by zero.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/math/Vector.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.math;
+
+import java.util.Objects;
+
+public final class Vector {
+    private final double[] values;
+
+    public Vector(double[] values) {
+        Objects.requireNonNull(values, "values");
+        if (values.length == 0) {
+            throw new IllegalArgumentException("A vector must have at least one entry");
+        }
+        this.values = values.clone();
+    }
+
+    public static Vector zeros(int size) {
+        if (size &lt;= 0) {
+            throw new IllegalArgumentException("Vector size must be positive");
+        }
+        return new Vector(new double[size]);
+    }
+
+    public int size() {
+        return values.length;
+    }
+
+    public double get(int index) {
+        return values[index];
+    }
+
+    public double[] toArray() {
+        return values.clone();
+    }
+
+    public Vector add(Vector other) {
+        requireSameSize(other);
+        double[] result = new double[size()];
+        for (int index = 0; index &lt; size(); index++) {
+            result[index] = values[index] + other.values[index];
+        }
+        return new Vector(result);
+    }
+
+    public Vector subtract(Vector other) {
+        requireSameSize(other);
+        double[] result = new double[size()];
+        for (int index = 0; index &lt; size(); index++) {
+            result[index] = values[index] - other.values[index];
+        }
+        return new Vector(result);
+    }
+
+    public Vector scale(double factor) {
+        double[] result = new double[size()];
+        for (int index = 0; index &lt; size(); index++) {
+            result[index] = values[index] * factor;
+        }
+        return new Vector(result);
+    }
+
+    public double dot(Vector other) {
+        requireSameSize(other);
+        double sum = 0.0;
+        for (int index = 0; index &lt; size(); index++) {
+            // Each pair contributes one product to the weighted sum.
+            sum += values[index] * other.values[index];
+        }
+        return sum;
+    }
+
+    public double magnitude() {
+        return Math.sqrt(dot(this));
+    }
+
+    public Vector normalize() {
+        double length = magnitude();
+        if (length == 0.0) {
+            throw new ArithmeticException("Cannot normalize a zero vector");
+        }
+        return scale(1.0 / length);
+    }
+
+    private void requireSameSize(Vector other) {
+        Objects.requireNonNull(other, "other");
+        if (size() != other.size()) {
+            throw new IllegalArgumentException(
+                "Vector sizes differ: " + size() + " and " + other.size()
+            );
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>The constructor and <code>toArray()</code> both copy arrays. That small cost makes the public value immutable: changing an input array after construction cannot secretly change your weights. Operations also return new vectors. We can profile and optimize allocations later if a training workload needs it.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Example after running jshell --class-path out</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">import com.neuralscratch.math.Vector;
+
+Vector inputs = new Vector(new double[] {2, 3, 4});
+Vector weights = new Vector(new double[] {5, 6, 7});
+double weightedSum = inputs.dot(weights); // 56.0
+Vector direction = new Vector(new double[] {3, 4}).normalize();
+// direction holds [0.6, 0.8]; its magnitude is 1.0</code></pre>
+                    </div>
+                </section>
+
+                <section id="matrices">
+                    <h2>2. Matrices: A Grid with a Shape</h2>
+                    <p>A <strong>matrix</strong> is a rectangular table of numbers. Its <strong>shape</strong> is <code>rows × columns</code>. A layer with two input features and three neurons can store its weights in a <code>2 × 3</code> matrix: each row belongs to an input feature, each column to an output neuron. A single input can be a <code>1 × 2</code> row. Their product will be <code>1 × 3</code>.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Shapes before arithmetic</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-text">input (1 × 2)       weights (2 × 3)         output (1 × 3)
+[ 2  3 ]      ×      [ 1  0  2 ]      =      [ 14  15  10 ]
+                      [ 4  5  2 ]</code></pre>
+                    </div>
+                    <p>We store the matrix as <code>double[][]</code>: <code>data[row][column]</code>. Each row is an array with the same number of columns. Java does not enforce rectangular arrays, so the <code>of</code> factory validates the shape and copies every row. Our zero-filled constructor rejects dimensions that are not positive.</p>
+                    <h3>The complete <code>Matrix</code> class</h3>
+                    <p>Read the method names first; then come back to the loops after the worked multiplication below. This is one complete source file, not a collection of placeholders.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/math/Matrix.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.math;
+
+import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
+
+public final class Matrix {
+    private final double[][] data;
+    private final int rows;
+    private final int cols;
+
+    public Matrix(int rows, int cols) {
+        if (rows &lt;= 0 || cols &lt;= 0) {
+            throw new IllegalArgumentException("Matrix dimensions must be positive");
+        }
+        this.rows = rows;
+        this.cols = cols;
+        this.data = new double[rows][cols];
+    }
+
+    public static Matrix of(double[][] values) {
+        Objects.requireNonNull(values, "values");
+        if (values.length == 0 || values[0] == null || values[0].length == 0) {
+            throw new IllegalArgumentException("Matrix must have positive dimensions");
+        }
+        Matrix result = new Matrix(values.length, values[0].length);
+        for (int row = 0; row &lt; result.rows; row++) {
+            if (values[row] == null || values[row].length != result.cols) {
+                throw new IllegalArgumentException("All matrix rows must have equal length");
+            }
+            System.arraycopy(values[row], 0, result.data[row], 0, result.cols);
+        }
+        return result;
+    }
+
+    public static Matrix column(Vector vector) {
+        Objects.requireNonNull(vector, "vector");
+        Matrix result = new Matrix(vector.size(), 1);
+        for (int row = 0; row &lt; vector.size(); row++) {
+            result.data[row][0] = vector.get(row);
+        }
+        return result;
+    }
+
+    public int rows() {
+        return rows;
+    }
+
+    public int cols() {
+        return cols;
+    }
+
+    public double get(int row, int col) {
+        return data[row][col];
+    }
+
+    public Vector toColumnVector() {
+        if (cols != 1) {
+            throw new IllegalStateException("Expected one column, got " + cols);
+        }
+        double[] values = new double[rows];
+        for (int row = 0; row &lt; rows; row++) {
+            values[row] = data[row][0];
+        }
+        return new Vector(values);
+    }
+
+    public Matrix add(Matrix other) {
+        requireSameShape(other);
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[row][col] = data[row][col] + other.data[row][col];
+            }
+        }
+        return result;
+    }
+
+    public Matrix subtract(Matrix other) {
+        requireSameShape(other);
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[row][col] = data[row][col] - other.data[row][col];
+            }
+        }
+        return result;
+    }
+
+    public Matrix scale(double factor) {
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[row][col] = data[row][col] * factor;
+            }
+        }
+        return result;
+    }
+
+    public Matrix hadamard(Matrix other) {
+        requireSameShape(other);
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                // Hadamard multiplication pairs entries at the same position.
+                result.data[row][col] = data[row][col] * other.data[row][col];
+            }
+        }
+        return result;
+    }
+
+    public Matrix multiply(Matrix other) {
+        Objects.requireNonNull(other, "other");
+        if (cols != other.rows) {
+            throw new IllegalArgumentException(
+                "Cannot multiply " + rows + "x" + cols + " by "
+                    + other.rows + "x" + other.cols
+            );
+        }
+        Matrix result = new Matrix(rows, other.cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int shared = 0; shared &lt; cols; shared++) {
+                double left = data[row][shared];
+                for (int col = 0; col &lt; other.cols; col++) {
+                    // Accumulate one row/column dot product in each output cell.
+                    result.data[row][col] += left * other.data[shared][col];
+                }
+            }
+        }
+        return result;
+    }
+
+    public Matrix transpose() {
+        Matrix result = new Matrix(cols, rows);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[col][row] = data[row][col];
+            }
+        }
+        return result;
+    }
+
+    public Matrix reshape(int newRows, int newCols) {
+        if (newRows &lt;= 0 || newCols &lt;= 0
+                || (long) newRows * newCols != (long) rows * cols) {
+            throw new IllegalArgumentException("Reshape must preserve the entry count");
+        }
+        Matrix result = new Matrix(newRows, newCols);
+        int index = 0;
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                // Keep row-major order while placing each entry in its new shape.
+                result.data[index / newCols][index % newCols] = data[row][col];
+                index++;
+            }
+        }
+        return result;
+    }
+
+    public Matrix addRowVector(Vector bias) {
+        Objects.requireNonNull(bias, "bias");
+        if (bias.size() != cols) {
+            throw new IllegalArgumentException(
+                "Bias size " + bias.size() + " must equal column count " + cols
+            );
+        }
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[row][col] = data[row][col] + bias.get(col);
+            }
+        }
+        return result;
+    }
+
+    public Matrix apply(DoubleUnaryOperator function) {
+        Objects.requireNonNull(function, "function");
+        Matrix result = new Matrix(rows, cols);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                result.data[row][col] = function.applyAsDouble(data[row][col]);
+            }
+        }
+        return result;
+    }
+
+    private void requireSameShape(Matrix other) {
+        Objects.requireNonNull(other, "other");
+        if (rows != other.rows || cols != other.cols) {
+            throw new IllegalArgumentException(
+                "Matrix shapes differ: " + rows + "x" + cols + " and "
+                    + other.rows + "x" + other.cols
+            );
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>Only <code>get</code> exposes data to callers, and it returns a number, not an array. We fill newly allocated result matrices inside methods but never expose those arrays; the public API behaves like immutable values. Java's ordinary array bounds exceptions handle invalid individual indices.</p>
+                </section>
+
+                <section id="matrix-multiplication">
+                    <h2>3. Matrix Multiplication: Many Dot Products at Once</h2>
+                    <p>To multiply an <code>m × n</code> matrix by an <code>n × p</code> matrix, the <em>inner</em> dimensions must match. The result has shape <code>m × p</code>. Each output cell is a dot product: one row from the left matrix paired with one column from the right.</p>
+                    <div class="math-block">result[row][col] = Σ<sub>shared=0…n−1</sub> left[row][shared] × right[shared][col]</div>
+                    <p>For the first cell of our earlier example, <code>[2, 3] · [1, 4] = 2×1 + 3×4 = 14</code>. The next cell pairs <code>[2, 3]</code> with <code>[0, 5]</code>, giving <code>15</code>. No mysterious rule is hiding here; the three loops in <code>multiply</code> simply repeat this arithmetic for every output cell.</p>
+                    <p>We loop over <code>row</code>, then <code>shared</code>, then <code>col</code>. For a fixed <code>shared</code>, that innermost loop walks along a row of the right-hand <code>double[][]</code> and a row of the result. This often has better memory locality than repeatedly stepping down columns. It does not change the mathematical answer.</p>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">Check shapes before values</div>
+                        <p><code>2 × 3</code> times <code>3 × 4</code> yields <code>2 × 4</code>. <code>2 × 3</code> times <code>2 × 4</code> is invalid, regardless of the entries. Remember this rule when a future layer reports a dimension mismatch.</p>
+                    </div>
+                </section>
+
+                <section id="transpose-reshape">
+                    <h2>4. Transpose and Reshape: Different Ways to Arrange Data</h2>
+                    <p><strong>Transposition</strong> swaps rows and columns: entry <code>(row, col)</code> moves to <code>(col, row)</code>. A <code>2 × 3</code> matrix becomes <code>3 × 2</code>. In backpropagation, transposing a weight matrix lets us carry error signals back toward the previous layer.</p>
+                    <p><strong>Reshaping</strong> also changes dimensions, but it does <em>not</em> swap entries by their coordinates. It reads all entries row by row and writes them into a new shape in the same order. The total entry count must stay the same. Transpose and reshape are not interchangeable.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Transpose versus reshape</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-text">Original (2 × 3)       Transpose (3 × 2)       Reshape (3 × 2)
+[ 1  2  3 ]            [ 1  4 ]               [ 1  2 ]
+[ 4  5  6 ]            [ 2  5 ]               [ 3  4 ]
+                       [ 3  6 ]               [ 5  6 ]</code></pre>
+                    </div>
+                    <p>To treat a vector as a column matrix, call <code>Matrix.column(vector)</code>; to recover it, call <code>toColumnVector()</code> on a one-column matrix. We do <em>not</em> silently guess whether a vector should be a row or column. A batch of input examples, by contrast, uses one row per example.</p>
+                </section>
+
+                <section id="element-wise">
+                    <h2>5. Element-Wise Arithmetic and Bias Broadcasting</h2>
+                    <p>Some operations pair entries in the <em>same position</em>. Addition and subtraction work this way. So does the <strong>Hadamard product</strong>: <code>[[1, 2]]</code> hadamard <code>[[3, 4]]</code> gives <code>[[3, 8]]</code>. It is <em>not</em> matrix multiplication; both inputs must have exactly the same shape. We will need Hadamard products when combining error signals with activation derivatives.</p>
+                    <table>
+                        <thead><tr><th>Operation</th><th>Input shapes</th><th>Result</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>add</code>, <code>subtract</code>, <code>hadamard</code></td><td>identical</td><td>same shape</td></tr>
+                            <tr><td><code>multiply</code></td><td><code>m × n</code> and <code>n × p</code></td><td><code>m × p</code></td></tr>
+                            <tr><td><code>scale</code>, <code>apply</code></td><td>one matrix</td><td>same shape</td></tr>
+                            <tr><td><code>addRowVector</code></td><td><code>m × n</code> and vector of size <code>n</code></td><td><code>m × n</code></td></tr>
+                        </tbody>
+                    </table>
+                    <p><strong>Broadcasting</strong> means reusing a small value across a larger shape. Here we implement only the rule we need: add one bias vector to <em>each row</em> of a matrix. A generic broadcasting engine would be harder to reason about and is unnecessary for our network. <code>apply</code> takes a standard-library <code>DoubleUnaryOperator</code> and transforms every entry independently.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">One batched layer step</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">Matrix inputs = Matrix.of(new double[][] {{2, 3}, {1, 1}});
+Matrix weights = Matrix.of(new double[][] {{1, 0, 2}, {4, 5, 2}});
+Vector bias = new Vector(new double[] {1, -1, 0});
+
+Matrix weighted = inputs.multiply(weights);  // shape: 2 × 3
+Matrix shifted = weighted.addRowVector(bias); // rows: [15, 14, 10], [6, 4, 4]
+Matrix activated = shifted.apply(value -&gt; Math.max(0.0, value));</code></pre>
+                    </div>
+                    <p>The last line is a preview of ReLU, an activation function we will revisit later. For now, notice that every calculation already has a visible shape, and a batch of two inputs produces two output rows.</p>
+                </section>
+
+                <section id="calculus">
+                    <h2>6. Calculus: Measuring How an Output Changes</h2>
+                    <p>A <strong>derivative</strong> is a local slope. If <code>f(x) = x²</code>, then near <code>x = 3</code>, increasing <code>x</code> by a tiny amount changes <code>f(x)</code> by roughly six times that amount: the derivative there is <code>2×3 = 6</code>. A <strong>partial derivative</strong> asks the same question for one input while holding the other inputs fixed. The vector of all partial derivatives is the <strong>gradient</strong>.</p>
+                    <p>We can estimate a derivative by measuring the function a tiny step to the left and right. This is called a <strong>central difference</strong>:</p>
+                    <div class="math-block">f′(x) ≈ [f(x + h) − f(x − h)] / (2h)</div>
+                    <p>For a function of several inputs, repeat the measurement once for each coordinate. The following utility makes that procedure explicit. It uses Java SE's <code>DoubleUnaryOperator</code> and <code>ToDoubleFunction</code>, not an automatic-differentiation library.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/math/Calculus.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.math;
+
+import java.util.Objects;
+import java.util.function.DoubleUnaryOperator;
+import java.util.function.ToDoubleFunction;
+
+public final class Calculus {
+    private static final double STEP = 1e-5;
+
+    private Calculus() {
+    }
+
+    public static double derivative(DoubleUnaryOperator function, double at) {
+        Objects.requireNonNull(function, "function");
+        // A centered difference estimates the tangent's slope at at.
+        return (function.applyAsDouble(at + STEP)
+            - function.applyAsDouble(at - STEP)) / (2.0 * STEP);
+    }
+
+    public static Vector gradient(ToDoubleFunction&lt;Vector&gt; function, Vector point) {
+        Objects.requireNonNull(function, "function");
+        Objects.requireNonNull(point, "point");
+        double[] partials = new double[point.size()];
+        for (int coordinate = 0; coordinate &lt; point.size(); coordinate++) {
+            double[] plus = point.toArray();
+            double[] minus = point.toArray();
+            plus[coordinate] += STEP;
+            minus[coordinate] -= STEP;
+            // Only this coordinate changes; the rest are held fixed.
+            partials[coordinate] = (
+                function.applyAsDouble(new Vector(plus))
+                    - function.applyAsDouble(new Vector(minus))
+            ) / (2.0 * STEP);
+        }
+        return new Vector(partials);
+    }
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Checking a two-variable gradient</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">Vector point = new Vector(new double[] {3, 4});
+Vector slope = Calculus.gradient(
+    position -&gt; position.get(0) * position.get(0)
+        + position.get(1) * position.get(1),
+    point
+);
+// f(x, y) = x² + y²; slope is approximately [6, 8].</code></pre>
+                    </div>
+                    <h3>Why not use finite differences to train?</h3>
+                    <p>A gradient for <code>N</code> parameters needs <code>2N</code> function evaluations with this method. Worse, a step that is too large misses fine detail, while a step that is too small magnifies floating-point rounding. We will use <em>analytic</em> derivatives and the <strong>chain rule</strong> for actual learning in Chapter 5; finite differences are a useful independent check on those derivatives.</p>
+                    <p>The chain rule in plain English: if one value changes another, which then changes a third, multiply their two local rates of change. For <code>g(x) = (2x + 1)²</code>, the outside slope is <code>2(2x + 1)</code> and the inside slope is <code>2</code>. At <code>x = 3</code>, <code>g′(3) = 2×7×2 = 28</code>. Backpropagation repeatedly applies this idea, but no backpropagation engine is needed for this chapter.</p>
+                </section>
+
+                <section id="testing">
+                    <h2>7. Test the Math Before Building Neurons</h2>
+                    <p>A wrong matrix loop can still produce plausible-looking numbers. Check a small multiplication by hand, test invalid shapes, and verify that a transpose changes dimensions as expected. The following executable test harness needs <em>only</em> Java SE. Save it under <code>src/test/java/com/neuralscratch/math/MathChecks.java</code>; it throws <code>AssertionError</code> on a failed check, even when Java assertions are disabled.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/test/java/com/neuralscratch/math/MathChecks.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.math;
+
+import java.util.Random;
+
+public final class MathChecks {
+    private static final double TOLERANCE = 1e-8;
+
+    private MathChecks() {
+    }
+
+    public static void main(String[] args) {
+        double[] original = {3, 4};
+        Vector vector = new Vector(original);
+        original[0] = 99;
+        close(3, vector.get(0));
+        double[] exported = vector.toArray();
+        exported[0] = 99;
+        close(3, vector.get(0));
+        close(5, vector.magnitude());
+        vectorClose(new double[] {0.6, 0.8}, vector.normalize());
+        close(11, new Vector(new double[] {1, 2}).dot(
+            new Vector(new double[] {3, 4})));
+        vectorClose(new double[] {4, 6},
+            new Vector(new double[] {1, 2}).add(new Vector(new double[] {3, 4})));
+        vectorClose(new double[] {-2, -2},
+            new Vector(new double[] {1, 2}).subtract(new Vector(new double[] {3, 4})));
+        vectorClose(new double[] {2, 4}, new Vector(new double[] {1, 2}).scale(2));
+
+        double[][] source = {{1, 2, 3}, {4, 5, 6}};
+        Matrix left = Matrix.of(source);
+        source[0][0] = 99;
+        close(1, left.get(0, 0));
+        Matrix right = Matrix.of(new double[][] {{7, 8}, {9, 10}, {11, 12}});
+        matrixClose(new double[][] {{58, 64}, {139, 154}}, left.multiply(right));
+        matrixClose(new double[][] {{1, 4}, {2, 5}, {3, 6}}, left.transpose());
+        matrixClose(new double[][] {{1, 2}, {3, 4}, {5, 6}}, left.reshape(3, 2));
+        matrixClose(sourceWithoutMutation(), left.transpose().transpose());
+        vectorClose(new double[] {3, 4}, Matrix.column(vector).toColumnVector());
+
+        Matrix first = Matrix.of(new double[][] {{1, 2}, {3, 4}});
+        Matrix second = Matrix.of(new double[][] {{2, 3}, {4, 5}});
+        matrixClose(new double[][] {{3, 5}, {7, 9}}, first.add(second));
+        matrixClose(new double[][] {{-1, -1}, {-1, -1}}, first.subtract(second));
+        matrixClose(new double[][] {{2, 6}, {12, 20}}, first.hadamard(second));
+        matrixClose(new double[][] {{2, 4}, {6, 8}}, first.scale(2));
+        matrixClose(new double[][] {{1, 4}, {9, 16}}, first.apply(x -&gt; x * x));
+        matrixClose(new double[][] {{11, 22}, {13, 24}},
+            first.addRowVector(new Vector(new double[] {10, 20})));
+
+        close(6, Calculus.derivative(x -&gt; x * x, 3), 1e-5);
+        vectorClose(new double[] {6, 8}, Calculus.gradient(
+            point -&gt; point.get(0) * point.get(0)
+                + point.get(1) * point.get(1),
+            new Vector(new double[] {3, 4})), 1e-5);
+
+        Random random = new Random(42);
+        for (int trial = 0; trial &lt; 50; trial++) {
+            int rows = 1 + random.nextInt(4);
+            int cols = 1 + random.nextInt(4);
+            double[][] values = new double[rows][cols];
+            for (int row = 0; row &lt; rows; row++) {
+                for (int col = 0; col &lt; cols; col++) {
+                    values[row][col] = random.nextDouble();
+                }
+            }
+            Matrix sample = Matrix.of(values);
+            matrixClose(values, sample.transpose().transpose());
+            matrixClose(values, sample.reshape(cols, rows).reshape(rows, cols));
+        }
+
+        expectIllegalArgument(() -&gt; Matrix.of(new double[][] {{1}, {2, 3}}));
+        expectIllegalArgument(() -&gt; left.multiply(first));
+        expectIllegalArgument(() -&gt; left.reshape(4, 2));
+        expectIllegalArgument(() -&gt; first.addRowVector(new Vector(new double[] {1})));
+        expectIllegalArgument(() -&gt; vector.dot(new Vector(new double[] {1})));
+        try {
+            Vector.zeros(1).normalize();
+            throw new AssertionError("Expected zero-vector normalization to fail");
+        } catch (ArithmeticException expected) {
+            // The zero vector has no direction.
+        }
+        System.out.println("All math checks passed");
+    }
+
+    private static double[][] sourceWithoutMutation() {
+        return new double[][] {{1, 2, 3}, {4, 5, 6}};
+    }
+
+    private static void close(double expected, double actual) {
+        close(expected, actual, TOLERANCE);
+    }
+
+    private static void close(double expected, double actual, double tolerance) {
+        if (!Double.isFinite(actual) || Math.abs(expected - actual) &gt; tolerance) {
+            throw new AssertionError("Expected " + expected + ", got " + actual);
+        }
+    }
+
+    private static void vectorClose(double[] expected, Vector actual) {
+        vectorClose(expected, actual, TOLERANCE);
+    }
+
+    private static void vectorClose(double[] expected, Vector actual, double tolerance) {
+        if (expected.length != actual.size()) {
+            throw new AssertionError("Vector size mismatch");
+        }
+        for (int index = 0; index &lt; expected.length; index++) {
+            close(expected[index], actual.get(index), tolerance);
+        }
+    }
+
+    private static void matrixClose(double[][] expected, Matrix actual) {
+        if (expected.length != actual.rows() || expected[0].length != actual.cols()) {
+            throw new AssertionError("Matrix shape mismatch");
+        }
+        for (int row = 0; row &lt; actual.rows(); row++) {
+            for (int col = 0; col &lt; actual.cols(); col++) {
+                close(expected[row][col], actual.get(row, col));
+            }
+        }
+    }
+
+    private static void expectIllegalArgument(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // Invalid shapes must fail before any arithmetic begins.
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>From the project root, create an output directory and compile only these four files. This also works without Maven, JUnit, or a module descriptor:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Terminal (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">mkdir out
+javac -d out src/main/java/com/neuralscratch/math/Vector.java src/main/java/com/neuralscratch/math/Matrix.java src/main/java/com/neuralscratch/math/Calculus.java src/test/java/com/neuralscratch/math/MathChecks.java
+java -cp out com.neuralscratch.math.MathChecks</code></pre>
+                    </div>
+                    <p>Expected output: <code>All math checks passed</code>. The first multiplication check uses a known result. The seeded loop checks general properties across 50 small matrices: transposing twice and reshaping back must recover the original values. Its fixed seed makes failures repeatable. Try changing one loop index and rerun the checks to see which invariant catches it.</p>
+                </section>
+
+                <section id="recap">
+                    <h2>What You Now Have</h2>
+                    <ul>
+                        <li><code>Vector</code>: size validation, arithmetic, dot product, magnitude, normalization, and defensive copies.</li>
+                        <li><code>Matrix</code>: rectangular storage, shape checks, multiplication, transpose, reshape, Hadamard multiplication, row-wise bias addition, and element-wise functions.</li>
+                        <li><code>Calculus</code>: approximate derivatives and gradients for checking the exact derivatives we will write later.</li>
+                        <li>A repeatable, dependency-free check for representative values, shapes, invalid input, and numerical slopes.</li>
+                    </ul>
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Before Chapter 3</div>
+                        <p>Write down the shape of every intermediate value in <code>inputs.multiply(weights).addRowVector(bias)</code>. If you can explain why a single output cell is a dot product, you are ready to build your first neuron.</p>
+                    </div>
+                    <p>Next we will add the bias to one weighted sum, apply Step or Sigmoid, and see exactly what a perceptron can—and cannot—learn. Keep the math classes as they are: they are small enough to inspect whenever a later network result looks wrong.</p>
+                </section>
+
+                <nav class="chapter-nav" aria-label="Chapter navigation">
+                    <a href="chapter1.html" class="btn btn-secondary">← Previous: Chapter 1</a>
+                    <a href="chapter3.html" class="btn btn-primary">Next: Chapter 3 – The Architecture of a Neuron →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 2</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Pure Java SE • No machine-learning dependencies • Built for understanding</p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

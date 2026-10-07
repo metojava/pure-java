@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 6: Activation &amp; Loss Functions - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 6: Activation &amp; Loss Functions | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 6</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter active" aria-current="page"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 6</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="toc.html" class="btn btn-secondary">Table of Contents</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 6</span>
+                    <h1>Activation &amp; Loss Functions</h1>
+                    <p class="chapter-subtitle">Replace hand-picked slopes with ReLU, and replace squared error with a numerically stable softmax cross-entropy.</p>
+                </header>
+
+                <section id="our-plan">
+                    <h2>What We Are Building</h2>
+                    <p>Chapters 3–5 gave us a working learner: layers compute <code>z = a·W + b</code>, an <code>Activation</code> turns <code>z</code> into the layer output, a <code>MeanSquaredError</code> objective scores the final output, and <code>Backpropagation.trainBatch</code> pushes that score backward. This chapter upgrades the two pieces that decide <em>what</em> the network can learn and <em>how well the learning signal survives</em>: the activation function and the loss function.</p>
+                    <p>You will add three new source files and one executable check, all in plain Java 17 with no libraries:</p>
+                    <table>
+                        <thead><tr><th>File</th><th>Role</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>activation/ReLU.java</code></td><td>An elementwise <code>Activation</code> that is cheap and does not saturate on the right.</td></tr>
+                            <tr><td><code>activation/Softmax.java</code></td><td>A stable row-wise utility that converts scores into probabilities. It is <em>not</em> an <code>Activation</code>.</td></tr>
+                            <tr><td><code>loss/SoftmaxCrossEntropy.java</code></td><td>An <code>OutputObjective</code> for classification, with the fused gradient <code>(p − t) / batch</code>.</td></tr>
+                            <tr><td><code>loss/ActivationLossChecks.java</code></td><td>A dependency-free check that compares every formula with a finite-difference slope from Chapter 2's <code>Calculus</code>.</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="callout callout-info">
+                        <div class="callout-title">The contract this chapter plugs into</div>
+                        <p>Batches are row-major: one row per sample, one column per feature or output. <code>Activation</code> has <code>apply(double z)</code> and <code>derivative(double z)</code>, and <code>derivative</code> always receives the <em>pre-activation</em> <code>z</code>. <code>OutputObjective</code> has <code>loss(logits, output, targets)</code> and <code>delta(logits, output, targets, outputActivation)</code>; <code>delta</code> returns <code>∂L/∂z</code> for the output layer, already divided by the batch size. The loss functions already existing in your project (<code>MeanSquaredError</code>) and the ones we add here are interchangeable behind that interface, so <code>Backpropagation</code> needs no edits.</p>
+                    </div>
+                </section>
+
+                <section id="relu">
+                    <h2>1. ReLU: A Slope That Does Not Fade</h2>
+                    <p>Chapter 3's sigmoid squeezes every <code>z</code> into the range 0 to 1. Its derivative <code>σ(z)(1 − σ(z))</code> never exceeds <code>0.25</code> and approaches zero when <code>|z|</code> is large. In a deep stack, backpropagation multiplies one such derivative per layer, so the learning signal shrinks quickly. This is the <strong>vanishing gradient</strong> problem.</p>
+                    <p>The <strong>rectified linear unit</strong> is almost embarrassingly simple:</p>
+                    <div class="math-block">ReLU(z) = max(0, z)      ReLU′(z) = 1 if z &gt; 0, otherwise 0</div>
+                    <p>For positive <code>z</code> the output equals the input and the slope is exactly 1, so the signal passes through unchanged. For negative <code>z</code> the output and slope are both 0. The function is bent at <code>z = 0</code> like a hockey stick, so it has no single slope there. Any value between 0 and 1 would be a valid <em>subgradient</em>; we choose <strong>0</strong>. That choice is deliberate and tested.</p>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">Dead ReLU units</div>
+                        <p>If a neuron's <code>z</code> is negative for every training example, its derivative is 0 everywhere, so its weights receive no gradient and it can stay silent forever. Small learning rates and sensible initial weights reduce this risk; the Chapter 8 MNIST run uses ReLU in the hidden layer and reports measured results instead of assuming it works.</p>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/activation/ReLU.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.activation;
+
+public final class ReLU implements Activation {
+    @Override
+    public double apply(double z) {
+        // ReLU(z) = max(0, z). Math.max also passes NaN through instead of hiding it.
+        return Math.max(0.0, z);
+    }
+
+    @Override
+    public double derivative(double z) {
+        // Slope is 1 on the right of zero and 0 on the left.
+        // The kink at exactly zero has no single slope; we choose 0.
+        return z &gt; 0.0 ? 1.0 : 0.0;
+    }
+}</code></pre>
+                    </div>
+                    <p><code>Math.max(0.0, z)</code> was chosen over <code>z &gt; 0 ? z : 0</code> because <code>Math.max</code> propagates <code>NaN</code>. A silently-zeroed <code>NaN</code> would hide an earlier numerical failure.</p>
+                </section>
+
+                <section id="softmax">
+                    <h2>2. Softmax: Turning Scores into Probabilities</h2>
+                    <p>For a ten-way classifier the last layer produces ten real numbers per sample. These raw, unnormalized scores are called <strong>logits</strong>. We want probabilities: each between 0 and 1, and summing to 1 across the row. The <strong>softmax</strong> function does that:</p>
+                    <div class="math-block">p<sub>k</sub> = exp(z<sub>k</sub>) / Σ<sub>j</sub> exp(z<sub>j</sub>)</div>
+                    <p>For logits <code>[1, 2, 3]</code>: <code>e¹ = 2.718</code>, <code>e² = 7.389</code>, <code>e³ = 20.086</code>; their sum is <code>30.193</code>; so the probabilities are about <code>[0.0900, 0.2447, 0.6652]</code>.</p>
+                    <h3>Why softmax is not an <code>Activation</code></h3>
+                    <p>Our <code>Activation</code> interface maps one double to one double. Softmax cannot: <code>p<sub>k</sub></code> depends on <em>every</em> logit in the row, because of the denominator. Its derivative is therefore a whole matrix, the <strong>Jacobian</strong> <code>∂p<sub>i</sub>/∂z<sub>j</sub></code>:</p>
+                    <div class="math-block">∂p<sub>i</sub>/∂z<sub>j</sub> = p<sub>i</sub> (δ<sub>ij</sub> − p<sub>j</sub>)       (δ<sub>ij</sub> = 1 when i = j, else 0)</div>
+                    <p>A single <code>derivative(double z)</code> has nowhere to put that matrix. So <code>Softmax</code> is a standalone utility, and the clean way to use it in training is to fuse it with cross-entropy, as we do in section 4.</p>
+                    <h3>The overflow trap and the max-subtraction fix</h3>
+                    <p>Compute <code>Math.exp(1000)</code> in Java and you get <code>Infinity</code>; dividing <code>Infinity</code> by <code>Infinity</code> gives <code>NaN</code>. Yet softmax of <code>[1000, 1001, 1002]</code> is perfectly well defined. The fix is an algebraic identity: multiplying the numerator and denominator by the same constant <code>exp(−m)</code> changes nothing.</p>
+                    <div class="math-block">exp(z<sub>k</sub>) / Σ<sub>j</sub> exp(z<sub>j</sub>) = exp(z<sub>k</sub> − m) / Σ<sub>j</sub> exp(z<sub>j</sub> − m)</div>
+                    <p>Choose <code>m</code> as the row maximum. Every exponent is now at most 0, every <code>exp</code> is at most 1, and the largest term is exactly 1, so the sum is at least 1 and the division is safe. Very negative entries may underflow to 0, which is the correct rounded answer. The same identity gives the <strong>log-sum-exp</strong> used by the loss: <code>log Σ exp(z<sub>j</sub>) = m + log Σ exp(z<sub>j</sub> − m)</code>.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/activation/Softmax.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.activation;
+
+import com.neuralscratch.math.Matrix;
+import java.util.Objects;
+
+public final class Softmax {
+    private Softmax() {
+    }
+
+    public static Matrix apply(Matrix logits) {
+        requireFinite(logits);
+        double[][] probabilities = new double[logits.rows()][logits.cols()];
+        for (int row = 0; row &lt; logits.rows(); row++) {
+            double max = rowMax(logits, row);
+            double sum = 0.0;
+            for (int col = 0; col &lt; logits.cols(); col++) {
+                // exp(z - max) is at most 1, so it cannot overflow. The largest entry gives exactly 1.
+                double shifted = Math.exp(logits.get(row, col) - max);
+                probabilities[row][col] = shifted;
+                sum += shifted;
+            }
+            for (int col = 0; col &lt; logits.cols(); col++) {
+                // p_k = exp(z_k - max) / sum_j exp(z_j - max); the common factor exp(-max) cancels.
+                probabilities[row][col] /= sum;
+            }
+        }
+        return Matrix.of(probabilities);
+    }
+
+    public static double[] logSumExp(Matrix logits) {
+        requireFinite(logits);
+        double[] result = new double[logits.rows()];
+        for (int row = 0; row &lt; logits.rows(); row++) {
+            double max = rowMax(logits, row);
+            double sum = 0.0;
+            for (int col = 0; col &lt; logits.cols(); col++) {
+                sum += Math.exp(logits.get(row, col) - max);
+            }
+            // log(sum_j exp(z_j)) = max + log(sum_j exp(z_j - max)); sum is at least 1.
+            result[row] = max + Math.log(sum);
+        }
+        return result;
+    }
+
+    private static double rowMax(Matrix logits, int row) {
+        double max = logits.get(row, 0);
+        for (int col = 1; col &lt; logits.cols(); col++) {
+            max = Math.max(max, logits.get(row, col));
+        }
+        return max;
+    }
+
+    private static void requireFinite(Matrix logits) {
+        Objects.requireNonNull(logits, "logits");
+        for (int row = 0; row &lt; logits.rows(); row++) {
+            for (int col = 0; col &lt; logits.cols(); col++) {
+                if (!Double.isFinite(logits.get(row, col))) {
+                    throw new IllegalArgumentException(
+                        "Logit at row " + row + ", column " + col + " is not finite"
+                    );
+                }
+            }
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>Both methods reject <code>NaN</code> and infinite logits, and both process one row at a time, so a large score in one sample never affects another sample's probabilities.</p>
+                </section>
+
+                <section id="mse-recap">
+                    <h2>3. Mean Squared Error, and Where It Struggles</h2>
+                    <p>In Chapter 5 you built <code>MeanSquaredError</code>. Per sample it measures half the sum of squared errors between output <code>a</code> and target <code>t</code>, then averages over the batch of <code>B</code> rows:</p>
+                    <div class="math-block">L = (1 / B) · Σ<sub>samples</sub> ½ Σ<sub>k</sub> (a<sub>k</sub> − t<sub>k</sub>)²</div>
+                    <p>The <code>½</code> cancels the 2 from differentiating the square. The output-layer delta is <code>(a − t) ⊙ f′(z) / B</code>, where <code>⊙</code> is the elementwise Hadamard product and <code>f′</code> is the output activation's derivative evaluated at <code>z</code>. Squared error is natural for predicting a number such as a temperature or a price. For classification it has a weakness that appears through the factor <code>f′(z)</code>.</p>
+                    <p>Imagine one sigmoid output with target 1, and the network is confidently wrong: <code>z = −10</code>. Then <code>a = σ(−10) ≈ 0.0000454</code> and <code>f′(z) ≈ 0.0000454</code>. The delta is <code>(a − 1) · f′(z) ≈ −0.0000454</code>. The loss is nearly at its maximum for this sample, yet the learning signal is almost zero. The sigmoid's flat tail has multiplied the useful error by a tiny slope.</p>
+                </section>
+
+                <section id="cross-entropy">
+                    <h2>4. Softmax Cross-Entropy: A Loss Built for Probabilities</h2>
+                    <p><strong>Cross-entropy</strong> asks: how surprised is the model by the correct answer? If the model assigns probability <code>p<sub>c</sub></code> to the true class <code>c</code>, the surprise is <code>−log p<sub>c</sub></code>. This is 0 when <code>p<sub>c</sub> = 1</code> and grows without bound as <code>p<sub>c</sub></code> approaches 0. For a target <em>distribution</em> <code>t</code> (a one-hot vector is the special case with a single 1), the sample loss is:</p>
+                    <div class="math-block">L<sub>sample</sub> = − Σ<sub>k</sub> t<sub>k</sub> log p<sub>k</sub>       L = (1 / B) Σ<sub>samples</sub> L<sub>sample</sub></div>
+                    <h3>Computing it from logits</h3>
+                    <p>Taking <code>log</code> of a probability that has underflowed to 0 produces <code>−Infinity</code>. Instead, substitute <code>log p<sub>k</sub> = z<sub>k</sub> − logSumExp(z)</code>. Because the target row sums to 1:</p>
+                    <div class="math-block">L<sub>sample</sub> = Σ<sub>k</sub> t<sub>k</sub> · (logSumExp(z) − z<sub>k</sub>)</div>
+                    <p>No probability is ever formed, so a confidently wrong logit row such as <code>[1000, 0]</code> with true class 1 gives exactly the sensible loss 1000 instead of infinity. The class below checks that every target is in <code>[0, 1]</code> and each row sums to 1 within <code>1e-6</code>; this also makes it work for soft labels such as <code>[0.5, 0.5, 0]</code>.</p>
+                    <h3>The fused gradient, derived</h3>
+                    <p>Apply the chain rule through the softmax Jacobian. For one sample:</p>
+                    <div class="math-block">∂L/∂z<sub>j</sub> = Σ<sub>i</sub> (−t<sub>i</sub> / p<sub>i</sub>) · p<sub>i</sub> (δ<sub>ij</sub> − p<sub>j</sub>) = −t<sub>j</sub> + p<sub>j</sub> Σ<sub>i</sub> t<sub>i</sub> = p<sub>j</sub> − t<sub>j</sub></div>
+                    <p>The <code>p<sub>i</sub></code> in the numerator and denominator cancel, and <code>Σ t<sub>i</sub> = 1</code> removes the leftover sum. The whole Jacobian collapses into <code>p − t</code>. With the batch average included:</p>
+                    <div class="math-block">delta = (softmax(z) − t) / B</div>
+                    <p>For logits <code>[1, 2, 3]</code> and one-hot target <code>[0, 0, 1]</code>, the gradient is <code>[0.0900, 0.2447, −0.3348]</code> for <code>B = 1</code>. It pushes the true logit up and the others down, with force proportional to the mistake. Unlike the MSE example, there is no tiny slope factor: a confidently wrong prediction gets a gradient close to full strength.</p>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">Why the Identity requirement</div>
+                        <p>The formula <code>(p − t) / B</code> is the derivative with respect to the <em>logits</em>, which only equals the layer's <code>z</code> when the output activation is <code>Identity</code> (derivative 1). If you pass a different output activation, the correct delta would need an extra <code>f′(z)</code> factor, and the loss would no longer mean "softmax of the layer outputs". <code>delta</code> therefore throws <code>IllegalArgumentException</code> for any output activation that is not an <code>Identity</code>, instead of returning a wrong gradient quietly.</p>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/loss/SoftmaxCrossEntropy.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.loss;
+
+import com.neuralscratch.activation.Activation;
+import com.neuralscratch.activation.Identity;
+import com.neuralscratch.activation.Softmax;
+import com.neuralscratch.math.Matrix;
+import java.util.Objects;
+
+public final class SoftmaxCrossEntropy implements OutputObjective {
+    private static final double ROW_SUM_TOLERANCE = 1e-6;
+
+    @Override
+    public double loss(Matrix logits, Matrix output, Matrix targets) {
+        // The output argument is intentionally unused: the loss is computed from the raw logits.
+        requireCompatible(logits, targets);
+        double[] logSumExp = Softmax.logSumExp(logits);
+        double total = 0.0;
+        for (int row = 0; row &lt; logits.rows(); row++) {
+            for (int col = 0; col &lt; logits.cols(); col++) {
+                // -log p_k = logSumExp(z) - z_k, so L = sum_k t_k * (logSumExp(z) - z_k).
+                total += targets.get(row, col) * (logSumExp[row] - logits.get(row, col));
+            }
+        }
+        return total / logits.rows();
+    }
+
+    @Override
+    public Matrix delta(Matrix logits, Matrix output, Matrix targets, Activation outputActivation) {
+        if (!(outputActivation instanceof Identity)) {
+            throw new IllegalArgumentException(
+                "SoftmaxCrossEntropy needs an Identity output layer so that z are logits"
+            );
+        }
+        requireCompatible(logits, targets);
+        // dL/dz = (softmax(z) - t) / batchRows. The Identity derivative is 1, so this is already delta.
+        return Softmax.apply(logits).subtract(targets).scale(1.0 / logits.rows());
+    }
+
+    private static void requireCompatible(Matrix logits, Matrix targets) {
+        Objects.requireNonNull(logits, "logits");
+        Objects.requireNonNull(targets, "targets");
+        if (logits.rows() != targets.rows() || logits.cols() != targets.cols()) {
+            throw new IllegalArgumentException(
+                "Logits are " + logits.rows() + "x" + logits.cols() + " but targets are "
+                    + targets.rows() + "x" + targets.cols()
+            );
+        }
+        for (int row = 0; row &lt; targets.rows(); row++) {
+            double sum = 0.0;
+            for (int col = 0; col &lt; targets.cols(); col++) {
+                double target = targets.get(row, col);
+                if (!Double.isFinite(target) || target &lt; 0.0 || target &gt; 1.0) {
+                    throw new IllegalArgumentException(
+                        "Target at row " + row + ", column " + col + " must be in [0, 1]"
+                    );
+                }
+                sum += target;
+            }
+            if (Math.abs(sum - 1.0) &gt; ROW_SUM_TOLERANCE) {
+                throw new IllegalArgumentException(
+                    "Target row " + row + " must sum to 1 but sums to " + sum
+                );
+            }
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>Note that the <code>output</code> argument is unused by <code>loss</code>: the loss is derived from logits. For an <code>Identity</code> layer, <code>output</code> and <code>logits</code> are the same matrix anyway. Because the interface requires the parameter, we accept it and say clearly that we ignore it.</p>
+                </section>
+
+                <section id="contrast">
+                    <h2>5. MSE Versus Cross-Entropy at a Glance</h2>
+                    <table>
+                        <thead><tr><th></th><th>Mean squared error</th><th>Softmax cross-entropy</th></tr></thead>
+                        <tbody>
+                            <tr><td>Natural task</td><td>Predicting numbers; small demos such as XOR</td><td>Choosing one of several classes</td></tr>
+                            <tr><td>Output layer</td><td>Any activation</td><td><code>Identity</code> logits only</td></tr>
+                            <tr><td>Output delta</td><td><code>(a − t) ⊙ f′(z) / B</code></td><td><code>(softmax(z) − t) / B</code></td></tr>
+                            <tr><td>Confident mistake with sigmoid</td><td>Gradient shrinks with <code>f′(z)</code></td><td>Gradient stays large</td></tr>
+                            <tr><td>Numerical care</td><td>Plain subtraction</td><td>Max subtraction and log-sum-exp</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Neither is "the correct loss"; each is a modeling choice. Chapter 8 uses MSE for the tiny XOR network and cross-entropy for ten-class MNIST.</p>
+                </section>
+
+                <section id="finite-difference">
+                    <h2>6. Trust, but Verify: Finite-Difference Checks</h2>
+                    <p>A formula that looks right can still hide a sign error or a missing <code>1/B</code>. Chapter 2's <code>Calculus.gradient</code> measures the slope of the loss numerically by nudging each input up and down. If our analytic <code>delta</code> matches that independent measurement for every cell of a small matrix, we have strong evidence it is correct.</p>
+                    <p>The check below flattens a logits matrix into a <code>Vector</code>, asks <code>Calculus.gradient</code> for the slope of <code>loss</code> with respect to every entry, and compares it with <code>delta</code>. It does the same for <code>MeanSquaredError</code> with a sigmoid output, which also confirms the delta contract from Chapter 5. It exercises ReLU values (including the zero derivative at zero), softmax shift invariance, overflow-safe large logits, known loss values, soft labels, and every validation error.</p>
+                    <div class="callout callout-info">
+                        <div class="callout-title">Assumption about earlier chapters</div>
+                        <p>The check instantiates <code>new MeanSquaredError()</code>, <code>new Sigmoid()</code> and <code>new Identity()</code> with no-argument constructors, following the agreed contract. If your Chapter 3 or 5 code uses a different construction style, adjust only those three expressions.</p>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/test/java/com/neuralscratch/loss/ActivationLossChecks.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.loss;
+
+import com.neuralscratch.activation.Activation;
+import com.neuralscratch.activation.Identity;
+import com.neuralscratch.activation.ReLU;
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.activation.Softmax;
+import com.neuralscratch.math.Calculus;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.math.Vector;
+
+public final class ActivationLossChecks {
+    private static final double TOLERANCE = 1e-9;
+
+    private ActivationLossChecks() {
+    }
+
+    public static void main(String[] args) {
+        checkRelu();
+        checkSoftmax();
+        checkCrossEntropyValues();
+        checkCrossEntropyGradient();
+        checkMeanSquaredErrorGradient();
+        checkSaturation();
+        checkValidation();
+        System.out.println("All activation and loss checks passed");
+    }
+
+    private static void checkRelu() {
+        ReLU relu = new ReLU();
+        close(0.0, relu.apply(-3.5), TOLERANCE);
+        close(0.0, relu.apply(0.0), TOLERANCE);
+        close(2.5, relu.apply(2.5), TOLERANCE);
+        close(0.0, relu.derivative(-3.5), TOLERANCE);
+        close(0.0, relu.derivative(0.0), TOLERANCE);
+        close(1.0, relu.derivative(2.5), TOLERANCE);
+        close(1.0, Calculus.derivative(relu::apply, 2.5), 1e-6);
+        close(0.0, Calculus.derivative(relu::apply, -2.5), 1e-6);
+    }
+
+    private static void checkSoftmax() {
+        Matrix logits = Matrix.of(new double[][] {{1, 2, 3}, {0, 0, 0}});
+        Matrix probabilities = Softmax.apply(logits);
+        close(0.09003057317038046, probabilities.get(0, 0), 1e-12);
+        close(0.24472847105479764, probabilities.get(0, 1), 1e-12);
+        close(0.6652409557748219, probabilities.get(0, 2), 1e-12);
+        close(1.0 / 3.0, probabilities.get(1, 1), 1e-12);
+        for (int row = 0; row &lt; probabilities.rows(); row++) {
+            double sum = 0.0;
+            for (int col = 0; col &lt; probabilities.cols(); col++) {
+                sum += probabilities.get(row, col);
+            }
+            close(1.0, sum, 1e-12);
+        }
+
+        Matrix shifted = Softmax.apply(Matrix.of(new double[][] {{1001, 1002, 1003}}));
+        Matrix huge = Softmax.apply(Matrix.of(new double[][] {{1000, 1001, 1002}}));
+        for (int col = 0; col &lt; 3; col++) {
+            close(probabilities.get(0, col), shifted.get(0, col), 1e-12);
+            close(probabilities.get(0, col), huge.get(0, col), 1e-12);
+        }
+        if (Double.isFinite(Math.exp(1000.0))) {
+            throw new AssertionError("The naive exponential should overflow here");
+        }
+
+        expectIllegalArgument(() -&gt; Softmax.apply(Matrix.of(new double[][] {{1, Double.NaN}})));
+        expectIllegalArgument(() -&gt; Softmax.apply(
+            Matrix.of(new double[][] {{Double.POSITIVE_INFINITY, 1}})));
+    }
+
+    private static void checkCrossEntropyValues() {
+        SoftmaxCrossEntropy objective = new SoftmaxCrossEntropy();
+        Matrix uniform = Matrix.of(new double[][] {{0, 0}});
+        Matrix classZero = Matrix.of(new double[][] {{1, 0}});
+        close(Math.log(2.0), objective.loss(uniform, uniform, classZero), 1e-12);
+
+        Matrix logits = Matrix.of(new double[][] {{2.0, 1.0, 0.1}});
+        double denominator = Math.exp(2.0) + Math.exp(1.0) + Math.exp(0.1);
+        double expected = -Math.log(Math.exp(2.0) / denominator);
+        Matrix oneHot = Matrix.of(new double[][] {{1, 0, 0}});
+        close(expected, objective.loss(logits, logits, oneHot), 1e-12);
+
+        Matrix soft = Matrix.of(new double[][] {{0.5, 0.5, 0.0}});
+        double distributionLoss = -0.5 * Math.log(Math.exp(2.0) / denominator)
+            - 0.5 * Math.log(Math.exp(1.0) / denominator);
+        close(distributionLoss, objective.loss(logits, logits, soft), 1e-12);
+
+        Matrix confidentlyWrong = Matrix.of(new double[][] {{1000, 0}});
+        Matrix classOne = Matrix.of(new double[][] {{0, 1}});
+        close(1000.0, objective.loss(confidentlyWrong, confidentlyWrong, classOne), 1e-9);
+    }
+
+    private static void checkCrossEntropyGradient() {
+        SoftmaxCrossEntropy objective = new SoftmaxCrossEntropy();
+        Matrix logits = Matrix.of(new double[][] {{0.3, -1.2, 2.0}, {1.5, 0.2, -0.7}});
+        Matrix targets = Matrix.of(new double[][] {{0, 0, 1}, {0.25, 0.75, 0}});
+        Matrix delta = objective.delta(logits, logits, targets, new Identity());
+
+        Vector numeric = Calculus.gradient(
+            flat -&gt; {
+                Matrix z = unflatten(flat, 2, 3);
+                return objective.loss(z, z, targets);
+            },
+            flatten(logits)
+        );
+        for (int row = 0; row &lt; 2; row++) {
+            for (int col = 0; col &lt; 3; col++) {
+                close(numeric.get(row * 3 + col), delta.get(row, col), 1e-7);
+            }
+        }
+        Matrix probabilities = Softmax.apply(logits);
+        close((probabilities.get(0, 0) - 0.0) / 2.0, delta.get(0, 0), TOLERANCE);
+    }
+
+    private static void checkMeanSquaredErrorGradient() {
+        MeanSquaredError objective = new MeanSquaredError();
+        Activation sigmoid = new Sigmoid();
+        Matrix logits = Matrix.of(new double[][] {{0.4, -0.9}, {1.1, 0.3}});
+        Matrix targets = Matrix.of(new double[][] {{1, 0}, {0, 1}});
+        Matrix output = logits.apply(sigmoid::apply);
+        Matrix delta = objective.delta(logits, output, targets, sigmoid);
+
+        Vector numeric = Calculus.gradient(
+            flat -&gt; {
+                Matrix z = unflatten(flat, 2, 2);
+                return objective.loss(z, z.apply(sigmoid::apply), targets);
+            },
+            flatten(logits)
+        );
+        for (int row = 0; row &lt; 2; row++) {
+            for (int col = 0; col &lt; 2; col++) {
+                close(numeric.get(row * 2 + col), delta.get(row, col), 1e-7);
+            }
+        }
+    }
+
+    private static void checkSaturation() {
+        Activation sigmoid = new Sigmoid();
+        MeanSquaredError mse = new MeanSquaredError();
+        Matrix z = Matrix.of(new double[][] {{-10.0}});
+        Matrix target = Matrix.of(new double[][] {{1.0}});
+        double mseSlope = mse.delta(z, z.apply(sigmoid::apply), target, sigmoid).get(0, 0);
+
+        SoftmaxCrossEntropy crossEntropy = new SoftmaxCrossEntropy();
+        Matrix logits = Matrix.of(new double[][] {{10.0, 0.0}});
+        Matrix wrongTarget = Matrix.of(new double[][] {{0.0, 1.0}});
+        double ceSlope = crossEntropy.delta(logits, logits, wrongTarget, new Identity()).get(0, 0);
+        if (Math.abs(mseSlope) &gt; 1e-4 || Math.abs(ceSlope) &lt; 0.9) {
+            throw new AssertionError("Expected tiny MSE slope and large cross-entropy slope");
+        }
+        System.out.println("Confidently wrong, MSE with sigmoid: |dL/dz| = " + Math.abs(mseSlope));
+        System.out.println("Confidently wrong, softmax cross-entropy: |dL/dz| = " + Math.abs(ceSlope));
+    }
+
+    private static void checkValidation() {
+        SoftmaxCrossEntropy objective = new SoftmaxCrossEntropy();
+        Matrix logits = Matrix.of(new double[][] {{1, 2}});
+        Matrix good = Matrix.of(new double[][] {{1, 0}});
+        expectIllegalArgument(() -&gt; objective.delta(logits, logits, good, new Sigmoid()));
+        expectIllegalArgument(() -&gt; objective.loss(logits, logits,
+            Matrix.of(new double[][] {{1, 0, 0}})));
+        expectIllegalArgument(() -&gt; objective.loss(logits, logits,
+            Matrix.of(new double[][] {{1, 1}})));
+        expectIllegalArgument(() -&gt; objective.loss(logits, logits,
+            Matrix.of(new double[][] {{-0.5, 1.5}})));
+        expectIllegalArgument(() -&gt; objective.loss(logits, logits,
+            Matrix.of(new double[][] {{1, 0}, {0, 1}})));
+    }
+
+    private static Vector flatten(Matrix matrix) {
+        double[] values = new double[matrix.rows() * matrix.cols()];
+        for (int row = 0; row &lt; matrix.rows(); row++) {
+            for (int col = 0; col &lt; matrix.cols(); col++) {
+                values[row * matrix.cols() + col] = matrix.get(row, col);
+            }
+        }
+        return new Vector(values);
+    }
+
+    private static Matrix unflatten(Vector vector, int rows, int cols) {
+        double[][] values = new double[rows][cols];
+        for (int index = 0; index &lt; vector.size(); index++) {
+            values[index / cols][index % cols] = vector.get(index);
+        }
+        return Matrix.of(values);
+    }
+
+    private static void close(double expected, double actual, double tolerance) {
+        if (!Double.isFinite(actual) || Math.abs(expected - actual) &gt; tolerance) {
+            throw new AssertionError("Expected " + expected + ", got " + actual);
+        }
+    }
+
+    private static void expectIllegalArgument(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // The invalid input was rejected before any loss was computed.
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>From the project root, compile every source file and run the check. These commands need only the JDK:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">New-Item -ItemType Directory -Force out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
+java -cp out com.neuralscratch.loss.ActivationLossChecks</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">macOS / Linux shell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">mkdir -p out
+javac -d out $(find src -name "*.java")
+java -cp out com.neuralscratch.loss.ActivationLossChecks</code></pre>
+                    </div>
+                    <p>The checks print two diagnostic lines for the confidently-wrong example and then a pass message. Values from one run against a reference implementation of the Chapter 3–5 contract:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Output</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-text">Confidently wrong, MSE with sigmoid: |dL/dz| = 4.5393746863032435E-5
+Confidently wrong, softmax cross-entropy: |dL/dz| = 0.9999546021312976
+All activation and loss checks passed</code></pre>
+                    </div>
+                    <p>The two numbers compare different models (one sigmoid output versus a two-logit softmax), so they illustrate the <em>shape</em> of each gradient rather than a head-to-head benchmark. The last digits can differ between Java versions.</p>
+                </section>
+
+                <section id="wiring">
+                    <h2>7. How These Pieces Fit Together</h2>
+                    <p>Nothing in <code>Backpropagation</code> changes. A classifier is assembled like this, which Chapter 8 turns into a full program:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Preview: a 784 → 64 → 10 classifier</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">Random random = new Random(7);
+Network network = new Network(
+    DenseLayer.random(784, 64, new ReLU(), random),
+    DenseLayer.random(64, 10, new Identity(), random)); // Identity: outputs are logits
+SoftmaxCrossEntropy objective = new SoftmaxCrossEntropy();
+
+double loss = Backpropagation.trainBatch(network, inputs, targets, objective, 0.05);
+Matrix probabilities = Softmax.apply(network.predict(inputs));</code></pre>
+                    </div>
+                    <p>During training, the network's last layer outputs logits. Probabilities exist only when you want to read a prediction, via <code>Softmax.apply</code>. During backpropagation, <code>trainBatch</code> asks the objective for the output delta, multiplies it back through the weights using the hidden layers' <code>derivative</code> methods (now including ReLU's), and updates every layer.</p>
+                </section>
+
+                <section id="recap">
+                    <h2>What You Now Have</h2>
+                    <ul>
+                        <li><code>ReLU</code>: <code>max(0, z)</code> with derivative 1 for positive <code>z</code> and 0 otherwise, including zero.</li>
+                        <li><code>Softmax</code>: row-wise probabilities and log-sum-exp, stable for logits in the thousands, rejecting non-finite input.</li>
+                        <li><code>SoftmaxCrossEntropy</code>: a loss computed from logits, a fused <code>(p − t) / B</code> gradient, shape and target validation, and support for soft target distributions.</li>
+                        <li><code>ActivationLossChecks</code>: numerical-gradient verification for both the new loss and the existing MSE.</li>
+                    </ul>
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Before Chapter 7</div>
+                        <p>Pick logits <code>[0, 0, 0]</code> and target <code>[1, 0, 0]</code> and compute the loss and gradient by hand. You should get <code>log 3 ≈ 1.0986</code> and <code>[−0.6667, 0.3333, 0.3333]</code>. Then run the checks and change one sign in <code>delta</code> to watch them fail.</p>
+                    </div>
+                    <p>Next we stop calling <code>trainBatch</code> by hand. We will wrap it in a <code>Dataset</code> and a <code>Trainer</code> that shuffle samples, slice batches, and report the loss for every epoch.</p>
+                </section>
+
+
+                <nav class="chapter-nav" aria-label="Chapter navigation">
+                    <a href="chapter5.html" class="btn btn-secondary">← Previous: Chapter 5</a>
+                    <a href="chapter7.html" class="btn btn-primary">Next: Chapter 7 →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 6</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Pure Java SE • No machine-learning dependencies • Built for understanding</p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

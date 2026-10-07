@@ -1,0 +1,4341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Neural Networks from Scratch in Pure Java - an eight chapter practical guide using Java 17+ and no external machine learning libraries.">
+
+    <title>Neural Networks from Scratch in Pure Java</title>
+
+    <style>
+        :root {
+            --background: #0b1020;
+            --surface: #11182b;
+            --surface-light: #172039;
+            --text: #e8edf7;
+            --muted: #aab5ca;
+            --primary: #65b7ff;
+            --secondary: #8ef0c0;
+            --border: #293552;
+            --code-background: #080d18;
+            --warning: #ffd166;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--background);
+            color: var(--text);
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+            line-height: 1.75;
+        }
+
+        a {
+            color: var(--primary);
+        }
+
+        .container {
+            width: min(1120px, 92%);
+margin-left: 20px;
+padding-left: 20px
+            margin: auto;
+        }
+
+        header {
+            padding: 80px 0 60px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #101a35,
+                    #0b1020 65%
+                );
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: clamp(2.5rem, 6vw, 4.8rem);
+            line-height: 1.05;
+            margin: 0 0 20px;
+        }
+
+        h2 {
+            font-size: 2.1rem;
+            margin-top: 3rem;
+            padding-bottom: .5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.45rem;
+            margin-top: 2.2rem;
+            color: #cfe2ff;
+        }
+
+        h4 {
+            color: var(--secondary);
+        }
+
+        p,
+        li {
+            color: var(--text);
+        }
+
+        .lead {
+            max-width: 850px;
+            color: var(--muted);
+            font-size: 1.2rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            margin-bottom: 18px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--secondary);
+            font-size: .85rem;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            background: rgba(11, 16, 32, .92);
+            border-bottom: 1px solid var(--border);
+        }
+
+        nav .inner {
+            display: flex;
+            gap: 18px;
+            overflow-x: auto;
+            padding: 12px 0;
+        }
+
+        nav a {
+            color: var(--muted);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        main {
+            padding: 20px 0 80px;
+        }
+
+        .chapter {
+            padding-top: 55px;
+padding-left: 60px;
+width: 80%;
+        }
+
+        .toc,
+        .note,
+        .tip,
+        .exercise {
+            padding: 20px;
+            margin: 24px 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .note {
+            border-left: 4px solid var(--primary);
+        }
+
+        .tip {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .exercise {
+            border-left: 4px solid var(--warning);
+        }
+
+        code {
+            padding: 2px 5px;
+            background: #18213a;
+            border-radius: 4px;
+font-size: 1.0rem;
+        }
+
+        pre {
+            padding: 18px;
+            overflow-x: auto;
+            background: var(--code-background);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: #dce7ff;
+            line-height: 1.5;
+            font-size: 1.2rem;
+        }
+
+        pre code {
+            padding: 0;
+            background: none;
+        }
+
+        .math {
+            padding: 14px 18px;
+            overflow-x: auto;
+            background: #10172a;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: "Cambria Math", Georgia, serif;
+            font-size: 1.05rem;
+        }
+
+        table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        th {
+            background: var(--surface-light);
+        }
+
+        .small {
+            color: var(--muted);
+            font-size: .92rem;
+        }
+
+        footer {
+            padding: 35px 0;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+
+            nav {
+                display: none;
+            }
+
+            pre {
+                color: black;
+                background: #f4f4f4;
+                white-space: pre-wrap;
+            }
+
+            .chapter {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+
+        <span class="badge">
+            Java 17+ · No ML Libraries · From First Principles
+        </span>
+
+        <h1>
+            Neural Networks from Scratch in Pure Java
+        </h1>
+
+        <p class="lead">
+            A practical, step-by-step book for Java developers who want
+            to understand what neural networks actually do and implement
+            the mathematics, data structures, forward pass,
+            backpropagation, training loop, XOR, and a simple MNIST OCR
+            system using only the Java Standard Library.
+        </p>
+
+    </div>
+</header>
+
+<nav>
+    <div class="container inner">
+        <a href="#toc">Contents</a>
+        <a href="#chapter1">Chapter 1</a>
+        <a href="#chapter2">Chapter 2</a>
+        <a href="#chapter3">Chapter 3</a>
+        <a href="#chapter4">Chapter 4</a>
+        <a href="#chapter5">Chapter 5</a>
+        <a href="#chapter6">Chapter 6</a>
+        <a href="#chapter7">Chapter 7</a>
+        <a href="#chapter8">Chapter 8</a>
+    </div>
+</nav>
+
+<main class="container">
+
+<!-- ========================================================= -->
+<!-- TABLE OF CONTENTS -->
+<!-- ========================================================= -->
+
+<section id="toc" class="toc">
+
+    <h2>Table of Contents</h2>
+
+    <ol>
+
+        <li>
+            <a href="#chapter1">
+                Chapter 1: Introduction to Neural Networks
+                &amp; Why Pure Java?
+            </a>
+
+            <ul>
+                <li>What is a neural network?</li>
+                <li>Why build one from scratch?</li>
+                <li>Why Java?</li>
+                <li>The JVM advantage</li>
+                <li>Project structure</li>
+                <li>Our development philosophy</li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="#chapter2">
+                Chapter 2: The Math Blueprint
+            </a>
+
+            <ul>
+                <li>Scalars</li>
+                <li>Vectors</li>
+                <li>Matrices</li>
+                <li>Dot products</li>
+                <li>Matrix multiplication</li>
+                <li>Transpose</li>
+                <li>Derivatives</li>
+                <li>Gradients</li>
+                <li>Vector implementation</li>
+                <li>Matrix implementation</li>
+            </ul>
+        </li>
+
+        <li>
+            <a href="#chapter3">
+                Chapter 3: The Architecture of a Neuron
+            </a>
+        </li>
+
+        <li>
+            <a href="#chapter4">
+                Chapter 4: Building the Network Layers
+            </a>
+        </li>
+
+        <li>
+            <a href="#chapter5">
+                Chapter 5: Backpropagation &amp; Gradient Descent
+            </a>
+        </li>
+
+        <li>
+            <a href="#chapter6">
+                Chapter 6: Activation &amp; Loss Functions
+            </a>
+        </li>
+
+        <li>
+            <a href="#chapter7">
+                Chapter 7: Training the Network
+            </a>
+        </li>
+
+        <li>
+            <a href="#chapter8">
+                Chapter 8: Evaluation, XOR &amp; MNIST
+            </a>
+        </li>
+
+    </ol>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 1 -->
+<!-- ========================================================= -->
+
+<section id="chapter1" class="chapter">
+
+<h2>
+    Chapter 1:
+    Introduction to Neural Networks &amp; Why Pure Java?
+</h2>
+
+<p>
+    Neural networks can appear intimidating because they sit at the
+    intersection of programming, mathematics, statistics, and
+    optimization.
+</p>
+
+<p>
+    The central idea, however, is surprisingly simple:
+    a neural network is a program containing numbers that can adjust
+    themselves so that its predictions become better.
+</p>
+
+<div class="note">
+
+<strong>Book rule:</strong>
+
+Every important operation in this book is implemented using
+Java 17+ and the Java Standard Library.
+
+There is no ND4J, Deeplearning4j, NumPy, TensorFlow,
+PyTorch, or external linear-algebra package.
+
+</div>
+
+<h3>1.1 What Is a Neural Network?</h3>
+
+<p>
+    At its simplest, a neuron receives numbers, multiplies each
+    number by a weight, adds those results together, adds a bias,
+    and passes the result through an activation function.
+</p>
+
+<div class="math">
+    z = x₁w₁ + x₂w₂ + … + xₙwₙ + b
+</div>
+
+<p>
+    The weights determine how strongly individual inputs matter.
+    The bias shifts the result.
+    The activation function transforms the weighted sum into
+    the neuron's output.
+</p>
+
+<p>
+    A neural network is simply many such computations connected
+    together.
+</p>
+
+<p>
+    During training, the network changes its weights and biases
+    to reduce its prediction error.
+</p>
+
+<h3>1.2 Why Build It From Scratch?</h3>
+
+<ul>
+
+    <li>
+        <strong>Understanding.</strong>
+        Frameworks hide many details. Building the system yourself
+        exposes the actual computation.
+    </li>
+
+    <li>
+        <strong>Debuggability.</strong>
+        Every operation can be inspected with a debugger.
+    </li>
+
+    <li>
+        <strong>Engineering discipline.</strong>
+        You become aware of memory allocation, loops, numerical
+        precision, and data layout.
+    </li>
+
+    <li>
+        <strong>Transferable knowledge.</strong>
+        Once you understand matrix multiplication and
+        backpropagation, higher-level frameworks become easier
+        to understand.
+    </li>
+
+</ul>
+
+<h3>1.3 Why Java?</h3>
+
+<p>
+    Java is an excellent environment for learning neural networks.
+    It has strong typing, mature development tools, predictable
+    object-oriented structure, excellent debugging support, and
+    a powerful Just-In-Time compiler.
+</p>
+
+<p>
+    Java's Standard Edition also provides everything we need for
+    this project:
+</p>
+
+<ul>
+
+    <li>Arrays</li>
+    <li>Collections</li>
+    <li>Random number generation</li>
+    <li>File I/O</li>
+    <li>Binary streams</li>
+    <li>Command-line applications</li>
+    <li>Exceptions</li>
+    <li>Testing infrastructure</li>
+
+</ul>
+
+<p>
+    Pure Java does not mean that this implementation will
+    automatically outperform specialized numerical libraries.
+    That is not the purpose.
+</p>
+
+<p>
+    Our purpose is transparency.
+</p>
+
+<h3>1.4 What Does "Pure Java" Mean?</h3>
+
+<p>
+    In this book, pure Java means that the numerical operations
+    are implemented using Java itself and the Java Standard Library.
+</p>
+
+<p>
+    For example, matrix multiplication will ultimately be ordinary
+    Java loops:
+</p>
+
+<pre><code>for (int row = 0; row &lt; rows; row++) {
+
+    for (int column = 0; column &lt; columns; column++) {
+
+        double sum = 0.0;
+
+        for (int k = 0; k &lt; commonDimension; k++) {
+
+            sum += left[row][k] * right[k][column];
+        }
+
+        result[row][column] = sum;
+    }
+}</code></pre>
+
+<p>
+    There is no hidden native matrix engine behind this operation.
+</p>
+
+<h3>1.5 Project Structure</h3>
+
+<p>
+    We can organize the project as follows:
+</p>
+
+<pre><code>neural-networks-java/
+│
+├── src/
+│   └── main/
+│       └── java/
+│           └── nn/
+│
+│               ├── Main.java
+│
+│               ├── math/
+│               │   ├── Vector.java
+│               │   └── Matrix.java
+│
+│               ├── activation/
+│               │   ├── Sigmoid.java
+│               │   ├── ReLU.java
+│               │   └── Softmax.java
+│
+│               ├── loss/
+│               │   ├── MeanSquaredError.java
+│               │   └── CrossEntropy.java
+│
+│               ├── layer/
+│               │   └── DenseLayer.java
+│
+│               ├── network/
+│               │   └── NeuralNetwork.java
+│
+│               ├── training/
+│               │   └── Trainer.java
+│
+│               └── data/
+│                   └── MnistReader.java
+│
+└── data/</code></pre>
+
+<h3>1.6 Our Development Philosophy</h3>
+
+<p>
+    We will deliberately avoid unnecessary abstractions.
+</p>
+
+<p>
+    A vector is fundamentally an array of numbers.
+    A matrix is fundamentally a two-dimensional array.
+    A dense layer contains weights and biases.
+    A network contains layers.
+</p>
+
+<p>
+    We want our code to communicate the mathematics directly.
+</p>
+
+<div class="tip">
+
+<strong>Important engineering principle:</strong>
+
+Math classes should know mathematics.
+
+Layers should know neural-network structure.
+
+Training code should know optimization.
+
+</div>
+
+<h3>1.7 Creating the First Java Program</h3>
+
+<pre><code>package nn;
+
+public class Main {
+
+    public static void main(String[] args) {
+
+        System.out.println(
+            "Neural Networks from Scratch in Pure Java"
+        );
+
+        System.out.println(
+            "Java version: "
+            + System.getProperty("java.version")
+        );
+    }
+}</code></pre>
+
+<h3>1.8 Compiling the Program</h3>
+
+<p>
+    Using the Java Development Kit:
+</p>
+
+<pre><code>javac -d out src/main/java/nn/Main.java</code></pre>
+
+<p>
+    Then run it:
+</p>
+
+<pre><code>java -cp out nn.Main</code></pre>
+
+<h3>1.9 What We Will Build</h3>
+
+<p>
+    By the end of this book, our system will be capable of:
+</p>
+
+<ul>
+
+    <li>
+        Representing vectors and matrices.
+    </li>
+
+    <li>
+        Performing matrix operations.
+    </li>
+
+    <li>
+        Representing neurons.
+    </li>
+
+    <li>
+        Creating dense neural-network layers.
+    </li>
+
+    <li>
+        Performing forward propagation.
+    </li>
+
+    <li>
+        Calculating loss.
+    </li>
+
+    <li>
+        Computing gradients.
+    </li>
+
+    <li>
+        Performing backpropagation.
+    </li>
+
+    <li>
+        Updating parameters using gradient descent.
+    </li>
+
+    <li>
+        Training on XOR.
+    </li>
+
+    <li>
+        Reading MNIST directly from its binary format.
+    </li>
+
+    <li>
+        Classifying handwritten digits.
+    </li>
+
+</ul>
+
+<h3>1.10 Checkpoint</h3>
+
+<div class="exercise">
+
+<strong>Before continuing:</strong>
+
+You should be able to explain a neuron using this sentence:
+
+<br><br>
+
+<em>
+"A neuron calculates a weighted sum, adds a bias,
+and applies an activation function."
+</em>
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 2 -->
+<!-- ========================================================= -->
+
+<section id="chapter2" class="chapter">
+
+<h2>
+    Chapter 2:
+    The Math Blueprint – Linear Algebra &amp; Calculus in Java
+</h2>
+
+<p>
+    We do not need years of advanced mathematics to implement
+    a neural network.
+</p>
+
+<p>
+    We need a relatively small set of mathematical tools:
+</p>
+
+<ul>
+
+    <li>Scalars</li>
+    <li>Vectors</li>
+    <li>Matrices</li>
+    <li>Dot products</li>
+    <li>Matrix multiplication</li>
+    <li>Transpose</li>
+    <li>Derivatives</li>
+    <li>Gradients</li>
+
+</ul>
+
+<h3>2.1 Scalars</h3>
+
+<p>
+    A scalar is simply one number.
+</p>
+
+<pre><code>double learningRate = 0.01;
+double bias = 0.5;
+double temperature = 3.2;</code></pre>
+
+<h3>2.2 Vectors</h3>
+
+<p>
+    A vector is an ordered collection of numbers.
+</p>
+
+<pre><code>double[] input = {
+    0.2,
+    0.7,
+    0.4
+};</code></pre>
+
+<p>
+    We can think of this as:
+</p>
+
+<div class="math">
+    x = [0.2, 0.7, 0.4]
+</div>
+
+<h3>2.3 Matrices</h3>
+
+<p>
+    A matrix is a rectangular grid of values.
+</p>
+
+<pre><code>double[][] matrix = {
+
+    { 1.0, 2.0 },
+
+    { 3.0, 4.0 },
+
+    { 5.0, 6.0 }
+};</code></pre>
+
+<p>
+    This matrix has three rows and two columns.
+</p>
+
+<h3>2.4 Dot Product</h3>
+
+<p>
+    The dot product multiplies corresponding elements and adds
+    the results.
+</p>
+
+<div class="math">
+    a · b = Σ aᵢbᵢ
+</div>
+
+<p>
+    For example:
+</p>
+
+<div class="math">
+    [2, 3, 4] · [5, 6, 7]
+    =
+    (2×5) + (3×6) + (4×7)
+    =
+    56
+</div>
+
+<p>
+    In Java:
+</p>
+
+<pre><code>public static double dot(
+        double[] a,
+        double[] b) {
+
+    if (a.length != b.length) {
+        throw new IllegalArgumentException(
+            "Vector sizes must match"
+        );
+    }
+
+    double sum = 0.0;
+
+    for (int i = 0; i &lt; a.length; i++) {
+
+        sum += a[i] * b[i];
+    }
+
+    return sum;
+}</code></pre>
+
+<h3>2.5 Building a Vector Class</h3>
+
+<pre><code>package nn.math;
+
+import java.util.Arrays;
+
+public final class Vector {
+
+    private final double[] values;
+
+    public Vector(int size) {
+
+        if (size &lt;= 0) {
+            throw new IllegalArgumentException(
+                "Vector size must be positive"
+            );
+        }
+
+        this.values = new double[size];
+    }
+
+    public Vector(double[] values) {
+
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException(
+                "Vector cannot be empty"
+            );
+        }
+
+        this.values = values.clone();
+    }
+
+    public int size() {
+
+        return values.length;
+    }
+
+    public double get(int index) {
+
+        return values[index];
+    }
+
+    public void set(
+            int index,
+            double value) {
+
+        values[index] = value;
+    }
+
+    public double[] toArray() {
+
+        return values.clone();
+    }
+
+    public double dot(Vector other) {
+
+        if (size() != other.size()) {
+
+            throw new IllegalArgumentException(
+                "Vector sizes must match"
+            );
+        }
+
+        double sum = 0.0;
+
+        for (int i = 0; i &lt; size(); i++) {
+
+            sum +=
+                values[i]
+                * other.values[i];
+        }
+
+        return sum;
+    }
+
+    public Vector add(Vector other) {
+
+        checkSameSize(other);
+
+        double[] result =
+            new double[size()];
+
+        for (int i = 0; i &lt; size(); i++) {
+
+            result[i] =
+                values[i]
+                + other.values[i];
+        }
+
+        return new Vector(result);
+    }
+
+    public Vector subtract(Vector other) {
+
+        checkSameSize(other);
+
+        double[] result =
+            new double[size()];
+
+        for (int i = 0; i &lt; size(); i++) {
+
+            result[i] =
+                values[i]
+                - other.values[i];
+        }
+
+        return new Vector(result);
+    }
+
+    public Vector multiply(double scalar) {
+
+        double[] result =
+            new double[size()];
+
+        for (int i = 0; i &lt; size(); i++) {
+
+            result[i] =
+                values[i] * scalar;
+        }
+
+        return new Vector(result);
+    }
+
+    private void checkSameSize(
+            Vector other) {
+
+        if (size() != other.size()) {
+
+            throw new IllegalArgumentException(
+                "Vector sizes must match"
+            );
+        }
+    }
+
+    @Override
+    public String toString() {
+
+        return Arrays.toString(values);
+    }
+}</code></pre>
+
+<h3>2.6 Matrix Multiplication</h3>
+
+<p>
+    Matrix multiplication is one of the most important operations
+    in neural networks.
+</p>
+
+<p>
+    If matrix A has dimensions:
+</p>
+
+<div class="math">
+    m × n
+</div>
+
+<p>
+    and matrix B has dimensions:
+</p>
+
+<div class="math">
+    n × p
+</div>
+
+<p>
+    the resulting matrix has dimensions:
+</p>
+
+<div class="math">
+    m × p
+</div>
+
+<p>
+    Each output element is a dot product.
+</p>
+
+<div class="math">
+    Cᵢⱼ = Σₖ AᵢₖBₖⱼ
+</div>
+
+<h3>2.7 Matrix Multiplication in Java</h3>
+
+<pre><code>public static double[][] multiply(
+        double[][] a,
+        double[][] b) {
+
+    int aRows = a.length;
+    int aColumns = a[0].length;
+
+    int bRows = b.length;
+    int bColumns = b[0].length;
+
+    if (aColumns != bRows) {
+
+        throw new IllegalArgumentException(
+            "Incompatible matrix dimensions"
+        );
+    }
+
+    double[][] result =
+        new double[aRows][bColumns];
+
+    for (int row = 0;
+         row &lt; aRows;
+         row++) {
+
+        for (int column = 0;
+             column &lt; bColumns;
+             column++) {
+
+            double sum = 0.0;
+
+            for (int k = 0;
+                 k &lt; aColumns;
+                 k++) {
+
+                sum +=
+                    a[row][k]
+                    * b[k][column];
+            }
+
+            result[row][column] = sum;
+        }
+    }
+
+    return result;
+}</code></pre>
+
+<h3>2.8 Transpose</h3>
+
+<p>
+    Transposition swaps rows and columns.
+</p>
+
+<p>
+    For example:
+</p>
+
+<div class="math">
+    A =
+    [
+    1 2 3
+    4 5 6
+    ]
+</div>
+
+<p>
+    becomes:
+</p>
+
+<div class="math">
+    Aᵀ =
+    [
+    1 4
+    2 5
+    3 6
+    ]
+</div>
+
+<p>
+    Java implementation:
+</p>
+
+<pre><code>public static double[][] transpose(
+        double[][] matrix) {
+
+    int rows = matrix.length;
+    int columns = matrix[0].length;
+
+    double[][] result =
+        new double[columns][rows];
+
+    for (int row = 0;
+         row &lt; rows;
+         row++) {
+
+        for (int column = 0;
+             column &lt; columns;
+             column++) {
+
+            result[column][row] =
+                matrix[row][column];
+        }
+    }
+
+    return result;
+}</code></pre>
+
+<h3>2.9 Matrix Class</h3>
+
+<pre><code>package nn.math;
+
+import java.util.Random;
+
+public final class Matrix {
+
+    private final double[][] values;
+
+    public Matrix(
+            int rows,
+            int columns) {
+
+        if (rows &lt;= 0 ||
+            columns &lt;= 0) {
+
+            throw new IllegalArgumentException(
+                "Matrix dimensions must be positive"
+            );
+        }
+
+        values =
+            new double[rows][columns];
+    }
+
+    public Matrix(double[][] source) {
+
+        if (source == null ||
+            source.length == 0 ||
+            source[0].length == 0) {
+
+            throw new IllegalArgumentException(
+                "Matrix cannot be empty"
+            );
+        }
+
+        int columns =
+            source[0].length;
+
+        values =
+            new double[source.length][columns];
+
+        for (int row = 0;
+             row &lt; source.length;
+             row++) {
+
+            if (source[row].length != columns) {
+
+                throw new IllegalArgumentException(
+                    "Rows must have equal length"
+                );
+            }
+
+            System.arraycopy(
+                source[row],
+                0,
+                values[row],
+                0,
+                columns
+            );
+        }
+    }
+
+    public static Matrix random(
+            int rows,
+            int columns,
+            Random random,
+            double scale) {
+
+        Matrix result =
+            new Matrix(rows, columns);
+
+        for (int row = 0;
+             row &lt; rows;
+             row++) {
+
+            for (int column = 0;
+                 column &lt; columns;
+                 column++) {
+
+                result.values[row][column] =
+                    (random.nextDouble() * 2.0 - 1.0)
+                    * scale;
+            }
+        }
+
+        return result;
+    }
+
+    public int rows() {
+
+        return values.length;
+    }
+
+    public int columns() {
+
+        return values[0].length;
+    }
+
+    public double get(
+            int row,
+            int column) {
+
+        return values[row][column];
+    }
+
+    public void set(
+            int row,
+            int column,
+            double value) {
+
+        values[row][column] = value;
+    }
+
+    public Vector multiply(
+            Vector vector) {
+
+        if (columns() != vector.size()) {
+
+            throw new IllegalArgumentException(
+                "Matrix/vector dimensions do not match"
+            );
+        }
+
+        double[] result =
+            new double[rows()];
+
+        for (int row = 0;
+             row &lt; rows();
+             row++) {
+
+            double sum = 0.0;
+
+            for (int column = 0;
+                 column &lt; columns();
+                 column++) {
+
+                sum +=
+                    values[row][column]
+                    * vector.get(column);
+            }
+
+            result[row] = sum;
+        }
+
+        return new Vector(result);
+    }
+
+    public Matrix transpose() {
+
+        Matrix result =
+            new Matrix(columns(), rows());
+
+        for (int row = 0;
+             row &lt; rows();
+             row++) {
+
+            for (int column = 0;
+                 column &lt; columns();
+                 column++) {
+
+                result.values[column][row] =
+                    values[row][column];
+            }
+        }
+
+        return result;
+    }
+}</code></pre>
+
+<h3>2.10 Derivatives</h3>
+
+<p>
+    Linear algebra allows us to perform the forward computation.
+    Calculus will allow us to teach the network how to improve.
+</p>
+
+<p>
+    A derivative tells us how much one quantity changes when
+    another quantity changes.
+</p>
+
+<p>
+    Suppose:
+</p>
+
+<div class="math">
+    y = x²
+</div>
+
+<p>
+    Then:
+</p>
+
+<div class="math">
+    dy/dx = 2x
+</div>
+
+<p>
+    At x = 3, the derivative is 6.
+</p>
+
+<p>
+    In neural networks, we repeatedly ask questions such as:
+</p>
+
+<div class="note">
+
+"If I change this weight slightly, how much does the loss change?"
+
+</div>
+
+<h3>2.11 Gradient Descent</h3>
+
+<p>
+    A gradient tells us the direction in which a function increases
+    most rapidly.
+</p>
+
+<p>
+    Because we want to reduce loss, we move in the opposite
+    direction.
+</p>
+
+<div class="math">
+    parameter ← parameter − learningRate × gradient
+</div>
+
+<p>
+    This single equation is one of the central mechanisms of
+    neural-network training.
+</p>
+
+<h3>2.12 Numerical Derivatives</h3>
+
+<p>
+    A useful approximation for a derivative is:
+</p>
+
+<div class="math">
+    f′(x)
+    ≈
+    [f(x + ε) − f(x − ε)] / (2ε)
+</div>
+
+<p>
+    This is called a central finite difference.
+</p>
+
+<p>
+    We will later use it to verify that our backpropagation
+    implementation is calculating gradients correctly.
+</p>
+
+<h3>2.13 Chapter 2 Checkpoint</h3>
+
+<div class="exercise">
+
+Before continuing, make sure you can explain:
+
+<ul>
+
+    <li>What a vector is.</li>
+
+    <li>What a matrix is.</li>
+
+    <li>How a dot product works.</li>
+
+    <li>Why matrix dimensions must match.</li>
+
+    <li>What a transpose does.</li>
+
+    <li>What a derivative represents.</li>
+
+    <li>Why gradient descent subtracts the gradient.</li>
+
+</ul>
+
+</div>
+
+</section>
+```
+
+ I’ll continue with **Chapters 3–8** in the next part, including the complete neuron, dense layers, backpropagation, activation/loss functions, training loop, XOR, and the pure-Java MNIST implementation.
+
+Absolutely — here is **Part 2**, continuing the same HTML document. Append this immediately after Chapter 2 and before the closing `</main>`, `</body>`, and `</html>` tags.
+
+```
+<!-- ========================================================= -->
+<!-- CHAPTER 3 -->
+<!-- ========================================================= -->
+
+<section id="chapter3" class="chapter">
+
+<h2>
+    Chapter 3:
+    The Architecture of a Neuron
+</h2>
+
+<p>
+    We now have the mathematical foundation required to build our
+    first actual neural-network component.
+</p>
+
+<p>
+    A neuron is a small mathematical function that transforms
+    several input values into one output value.
+</p>
+
+<h3>3.1 The Mathematical Model</h3>
+
+<p>
+    Suppose a neuron receives three inputs:
+</p>
+
+<div class="math">
+    x₁, x₂, x₃
+</div>
+
+<p>
+    Each input has an associated weight:
+</p>
+
+<div class="math">
+    w₁, w₂, w₃
+</div>
+
+<p>
+    The neuron calculates:
+</p>
+
+<div class="math">
+    z =
+    x₁w₁ +
+    x₂w₂ +
+    x₃w₃ +
+    b
+</div>
+
+<p>
+    This is simply a dot product followed by the addition of a bias.
+</p>
+
+<p>
+    The result is then passed through an activation function:
+</p>
+
+<div class="math">
+    y = activation(z)
+</div>
+
+<p>
+    Therefore, the complete neuron can be written as:
+</p>
+
+<div class="math">
+    y = activation(x · w + b)
+</div>
+
+<h3>3.2 Why Do We Need Weights?</h3>
+
+<p>
+    Imagine a classifier that receives two measurements:
+</p>
+
+<ul>
+    <li>Hours spent studying</li>
+    <li>Hours spent sleeping</li>
+</ul>
+
+<p>
+    Perhaps studying has a stronger relationship with the prediction
+    than sleeping.
+</p>
+
+<p>
+    The neural network can represent that difference through its
+    weights.
+</p>
+
+<p>
+    A large positive weight means that increasing the input tends
+    to increase the neuron's output.
+</p>
+
+<p>
+    A negative weight means that increasing the input tends to
+    decrease the neuron's output.
+</p>
+
+<h3>3.3 The Bias</h3>
+
+<p>
+    The bias is an additional parameter that allows the neuron to
+    shift its activation threshold.
+</p>
+
+<div class="math">
+    z = x · w + b
+</div>
+
+<p>
+    Without the bias, the neuron would always be constrained by
+    a particular origin.
+</p>
+
+<p>
+    The bias gives the model additional flexibility.
+</p>
+
+<h3>3.4 The Perceptron</h3>
+
+<p>
+    One of the earliest useful neuron models is the perceptron.
+</p>
+
+<p>
+    The classic perceptron uses a step function:
+</p>
+
+<div class="math">
+    step(x) =
+    1, if x ≥ 0
+    0, otherwise
+</div>
+
+<p>
+    In Java:
+</p>
+
+<pre><code>package nn.activation;
+
+public final class StepActivation {
+
+    private StepActivation() {
+    }
+
+    public static double activate(double value) {
+
+        return value &gt;= 0.0
+                ? 1.0
+                : 0.0;
+    }
+}</code></pre>
+
+<h3>3.5 A Simple Perceptron</h3>
+
+<pre><code>package nn.network;
+
+import nn.activation.StepActivation;
+
+public final class Perceptron {
+
+    private final double[] weights;
+
+    private double bias;
+
+    public Perceptron(
+            int inputCount) {
+
+        if (inputCount &lt;= 0) {
+            throw new IllegalArgumentException(
+                "Input count must be positive"
+            );
+        }
+
+        this.weights =
+            new double[inputCount];
+
+        this.bias = 0.0;
+    }
+
+    public double predict(
+            double[] input) {
+
+        if (input.length != weights.length) {
+            throw new IllegalArgumentException(
+                "Input size does not match weights"
+            );
+        }
+
+        double weightedSum = bias;
+
+        for (int i = 0;
+             i &lt; input.length;
+             i++) {
+
+            weightedSum +=
+                input[i] * weights[i];
+        }
+
+        return StepActivation.activate(
+            weightedSum
+        );
+    }
+}</code></pre>
+
+<h3>3.6 The AND Gate</h3>
+
+<p>
+    We can represent logical AND using a perceptron.
+</p>
+
+<table>
+
+<thead>
+<tr>
+    <th>A</th>
+    <th>B</th>
+    <th>AND</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+</tr>
+
+<tr>
+    <td>0</td>
+    <td>1</td>
+    <td>0</td>
+</tr>
+
+<tr>
+    <td>1</td>
+    <td>0</td>
+    <td>0</td>
+</tr>
+
+<tr>
+    <td>1</td>
+    <td>1</td>
+    <td>1</td>
+</tr>
+
+</tbody>
+</table>
+
+<p>
+    One possible parameterization is:
+</p>
+
+<div class="math">
+    w₁ = 1
+    &nbsp;&nbsp;
+    w₂ = 1
+    &nbsp;&nbsp;
+    b = -1.5
+</div>
+
+<p>
+    When both inputs are one:
+</p>
+
+<div class="math">
+    1(1) + 1(1) - 1.5 = 0.5
+</div>
+
+<p>
+    The step function therefore returns one.
+</p>
+
+<h3>3.7 The OR Gate</h3>
+
+<p>
+    OR can similarly be represented with:
+</p>
+
+<div class="math">
+    w₁ = 1
+    &nbsp;&nbsp;
+    w₂ = 1
+    &nbsp;&nbsp;
+    b = -0.5
+</div>
+
+<p>
+    At least one input being one produces a non-negative value.
+</p>
+
+<h3>3.8 The Problem With the Step Function</h3>
+
+<p>
+    The step function is useful for understanding the perceptron,
+    but it creates a problem when we want to train a neural network
+    with gradient descent.
+</p>
+
+<p>
+    The step function is discontinuous.
+</p>
+
+<p>
+    We therefore introduce smoother activation functions.
+</p>
+
+<h3>3.9 Sigmoid</h3>
+
+<p>
+    The sigmoid function is:
+</p>
+
+<div class="math">
+    σ(x) = 1 / (1 + e⁻ˣ)
+</div>
+
+<p>
+    It maps any real number into the interval (0, 1).
+</p>
+
+<p>
+    Java:
+</p>
+
+<pre><code>package nn.activation;
+
+public final class Sigmoid {
+
+    private Sigmoid() {
+    }
+
+    public static double activate(
+            double value) {
+
+        return 1.0 /
+            (1.0 + Math.exp(-value));
+    }
+
+    public static double derivative(
+            double value) {
+
+        double output =
+            activate(value);
+
+        return output * (1.0 - output);
+    }
+}</code></pre>
+
+<p>
+    Notice something important about the derivative.
+</p>
+
+<div class="math">
+    σ′(x) = σ(x)(1 − σ(x))
+</div>
+
+<p>
+    This means that once we have calculated the sigmoid output,
+    we can calculate its derivative conveniently.
+</p>
+
+<h3>3.10 A Trainable Sigmoid Neuron</h3>
+
+<pre><code>package nn.network;
+
+import nn.activation.Sigmoid;
+
+import java.util.Random;
+
+public final class SigmoidNeuron {
+
+    private final double[] weights;
+
+    private double bias;
+
+    public SigmoidNeuron(
+            int inputCount,
+            Random random) {
+
+        this.weights =
+            new double[inputCount];
+
+        double scale =
+            1.0 / Math.sqrt(inputCount);
+
+        for (int i = 0;
+             i &lt; inputCount;
+             i++) {
+
+            weights[i] =
+                (random.nextDouble() * 2.0 - 1.0)
+                * scale;
+        }
+
+        bias = 0.0;
+    }
+
+    public double forward(
+            double[] input) {
+
+        double weightedSum = bias;
+
+        for (int i = 0;
+             i &lt; weights.length;
+             i++) {
+
+            weightedSum +=
+                input[i] * weights[i];
+        }
+
+        return Sigmoid.activate(
+            weightedSum
+        );
+    }
+}</code></pre>
+
+<h3>3.11 Why Random Initialization?</h3>
+
+<p>
+    Neural networks contain many parameters.
+    If every neuron started with exactly the same weights, neurons
+    would initially behave identically.
+</p>
+
+<p>
+    Random initialization breaks that symmetry.
+</p>
+
+<p>
+    We also do not want extremely large initial values because
+    activation functions such as sigmoid can saturate.
+</p>
+
+<p>
+    A simple initialization strategy is:
+</p>
+
+<div class="math">
+    weight ∼ Uniform(-1/√n, 1/√n)
+</div>
+
+<p>
+    where <em>n</em> is the number of inputs.
+</p>
+
+<div class="tip">
+
+<strong>Checkpoint:</strong>
+
+A neuron is not mysterious.
+
+It is:
+
+<br><br>
+
+<strong>
+weighted sum → bias → activation
+</strong>
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 4 -->
+<!-- ========================================================= -->
+
+<section id="chapter4" class="chapter">
+
+<h2>
+    Chapter 4:
+    Building the Network Layers
+</h2>
+
+<p>
+    A useful neural network is rarely a single neuron.
+    We normally connect many neurons into layers.
+</p>
+
+<p>
+    The most common basic layer is a dense, or fully connected,
+    layer.
+</p>
+
+<h3>4.1 What Is a Dense Layer?</h3>
+
+<p>
+    Suppose we have four input values and three neurons.
+    Every neuron receives all four inputs.
+</p>
+
+<p>
+    The layer therefore contains:
+</p>
+
+<div class="math">
+    4 × 3 = 12 weights
+</div>
+
+<p>
+    plus three biases.
+</p>
+
+<p>
+    If the input is represented as a column vector:
+</p>
+
+<div class="math">
+    x
+</div>
+
+<p>
+    the layer can be expressed as:
+</p>
+
+<div class="math">
+    z = Wx + b
+</div>
+
+<h3>4.2 Dense Layer Class</h3>
+
+<pre><code>package nn.layer;
+
+import nn.math.Matrix;
+import nn.math.Vector;
+
+import java.util.Random;
+
+public final class DenseLayer {
+
+    private final Matrix weights;
+
+    private final Vector biases;
+
+    private Vector lastInput;
+
+    private Vector lastPreActivation;
+
+    public DenseLayer(
+            int inputCount,
+            int outputCount,
+            Random random) {
+
+        double scale =
+            Math.sqrt(2.0 / inputCount);
+
+        this.weights =
+            Matrix.random(
+                outputCount,
+                inputCount,
+                random,
+                scale
+            );
+
+        this.biases =
+            new Vector(outputCount);
+    }
+
+    public Vector forward(
+            Vector input) {
+
+        if (input.size() !=
+            weights.columns()) {
+
+            throw new IllegalArgumentException(
+                "Input dimension mismatch"
+            );
+        }
+
+        lastInput = input;
+
+        Vector weighted =
+            weights.multiply(input);
+
+        double[] result =
+            new double[weighted.size()];
+
+        for (int i = 0;
+             i &lt; weighted.size();
+             i++) {
+
+            result[i] =
+                weighted.get(i)
+                + biases.get(i);
+        }
+
+        lastPreActivation =
+            new Vector(result);
+
+        return lastPreActivation;
+    }
+
+    public int inputCount() {
+
+        return weights.columns();
+    }
+
+    public int outputCount() {
+
+        return weights.rows();
+    }
+}</code></pre>
+
+<h3>4.3 Forward Propagation</h3>
+
+<p>
+    Forward propagation means moving input data from the beginning
+    of the network toward the output.
+</p>
+
+<p>
+    For a two-layer network:
+</p>
+
+<div class="math">
+    input → Layer 1 → activation → Layer 2 → output
+</div>
+
+<p>
+    Every layer consumes the previous layer's output.
+</p>
+
+<h3>4.4 Adding an Activation Function</h3>
+
+<p>
+    A clean design separates the dense transformation from the
+    activation function.
+</p>
+
+<p>
+    We can define an interface:
+</p>
+
+<pre><code>package nn.activation;
+
+public interface ActivationFunction {
+
+    double activate(double value);
+
+    double derivative(double value);
+}</code></pre>
+
+<h3>4.5 Sigmoid Activation Object</h3>
+
+<pre><code>package nn.activation;
+
+public final class SigmoidActivation
+        implements ActivationFunction {
+
+    @Override
+    public double activate(
+            double value) {
+
+        return 1.0 /
+            (1.0 + Math.exp(-value));
+    }
+
+    @Override
+    public double derivative(
+            double value) {
+
+        double output =
+            activate(value);
+
+        return output * (1.0 - output);
+    }
+}</code></pre>
+
+<h3>4.6 Activation as a Layer</h3>
+
+<pre><code>package nn.layer;
+
+import nn.activation.ActivationFunction;
+import nn.math.Vector;
+
+public final class ActivationLayer {
+
+    private final ActivationFunction function;
+
+    private Vector lastInput;
+
+    public ActivationLayer(
+            ActivationFunction function) {
+
+        this.function = function;
+    }
+
+    public Vector forward(
+            Vector input) {
+
+        lastInput = input;
+
+        double[] result =
+            new double[input.size()];
+
+        for (int i = 0;
+             i &lt; input.size();
+             i++) {
+
+            result[i] =
+                function.activate(
+                    input.get(i)
+                );
+        }
+
+        return new Vector(result);
+    }
+}</code></pre>
+
+<h3>4.7 The Network</h3>
+
+<p>
+    We can now build a simple sequential neural network.
+</p>
+
+<pre><code>package nn.network;
+
+import nn.math.Vector;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public final class NeuralNetwork {
+
+    private final List<Object> layers =
+        new ArrayList<>();
+
+    public void add(Object layer) {
+
+        layers.add(layer);
+    }
+
+    public Vector predict(Vector input) {
+
+        Vector current = input;
+
+        for (Object layer : layers) {
+
+            if (layer instanceof
+                    nn.layer.DenseLayer dense) {
+
+                current =
+                    dense.forward(current);
+
+            } else if (layer instanceof
+                    nn.layer.ActivationLayer activation) {
+
+                current =
+                    activation.forward(current);
+            }
+        }
+
+        return current;
+    }
+}</code></pre>
+
+<p>
+    In a production library we would probably introduce a common
+    layer interface. We are intentionally keeping the implementation
+    straightforward while learning the underlying mechanics.
+</p>
+
+<h3>4.8 Network Architecture</h3>
+
+<p>
+    A small binary classifier might use:
+</p>
+
+<pre><code>Input:      2 values
+
+Hidden:     4 neurons
+Activation: Sigmoid
+
+Output:     1 neuron
+Activation: Sigmoid</code></pre>
+
+<p>
+    Conceptually:
+</p>
+
+<div class="math">
+    x
+    → W₁x + b₁
+    → sigmoid
+    → W₂h + b₂
+    → sigmoid
+    → prediction
+</div>
+
+<h3>4.9 Why Multiple Layers?</h3>
+
+<p>
+    A single linear transformation can only represent a limited
+    class of functions.
+</p>
+
+<p>
+    By introducing nonlinear activation functions between layers,
+    we can compose increasingly complex transformations.
+</p>
+
+<p>
+    This is the basic reason multilayer neural networks can solve
+    problems that a single perceptron cannot.
+</p>
+
+<div class="exercise">
+
+<strong>Exercise:</strong>
+
+Draw a network containing:
+
+<ul>
+    <li>2 input neurons</li>
+    <li>3 hidden neurons</li>
+    <li>1 output neuron</li>
+</ul>
+
+Then calculate the total number of weights and biases.
+
+<p>
+Answer:
+</p>
+
+<div class="math">
+    weights = (2 × 3) + (3 × 1) = 9
+</div>
+
+<div class="math">
+    biases = 3 + 1 = 4
+</div>
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 5 -->
+<!-- ========================================================= -->
+
+<section id="chapter5" class="chapter">
+
+<h2>
+    Chapter 5:
+    The Core of Learning – Backpropagation &amp; Gradient Descent
+</h2>
+
+<p>
+    Forward propagation lets the network make predictions.
+</p>
+
+<p>
+    Learning requires one additional capability:
+    the network must determine how its parameters contributed
+    to the error.
+</p>
+
+<p>
+    This is where backpropagation enters.
+</p>
+
+<h3>5.1 Prediction Versus Learning</h3>
+
+<p>
+    Imagine that our network predicts:
+</p>
+
+<div class="math">
+    prediction = 0.72
+</div>
+
+<p>
+    while the correct answer is:
+</p>
+
+<div class="math">
+    target = 1.00
+</div>
+
+<p>
+    We need a numerical measurement of how wrong the prediction was.
+    That measurement is called the loss.
+</p>
+
+<h3>5.2 Mean Squared Error</h3>
+
+<p>
+    For one prediction:
+</p>
+
+<div class="math">
+    L = 1/2 (y − ŷ)²
+</div>
+
+<p>
+    where:
+</p>
+
+<ul>
+    <li><strong>y</strong> is the target</li>
+    <li><strong>ŷ</strong> is the prediction</li>
+</ul>
+
+<p>
+    The derivative with respect to the prediction is:
+</p>
+
+<div class="math">
+    ∂L/∂ŷ = ŷ − y
+</div>
+
+<h3>5.3 The Chain Rule</h3>
+
+<p>
+    Suppose:
+</p>
+
+<div class="math">
+    z = wx + b
+</div>
+
+<p>
+    and:
+</p>
+
+<div class="math">
+    y = σ(z)
+</div>
+
+<p>
+    The loss depends on y.
+    Therefore, to determine how the loss changes with respect to
+    w, we can follow the chain:
+</p>
+
+<div class="math">
+    ∂L/∂w
+    =
+    ∂L/∂y
+    ×
+    ∂y/∂z
+    ×
+    ∂z/∂w
+</div>
+
+<p>
+    Since:
+</p>
+
+<div class="math">
+    z = wx + b
+</div>
+
+<p>
+    we have:
+</p>
+
+<div class="math">
+    ∂z/∂w = x
+</div>
+
+<p>
+    Therefore:
+</p>
+
+<div class="math">
+    ∂L/∂w
+    =
+    ∂L/∂y
+    ×
+    σ′(z)
+    ×
+    x
+</div>
+
+<h3>5.4 Gradient Descent</h3>
+
+<p>
+    Once we have a gradient, the parameter can be updated:
+</p>
+
+<div class="math">
+    w ← w − η ∂L/∂w
+</div>
+
+<p>
+    where η is the learning rate.
+</p>
+
+<h3>5.5 A Trainable Neuron</h3>
+
+<pre><code>package nn.network;
+
+import nn.activation.Sigmoid;
+
+import java.util.Random;
+
+public final class TrainableNeuron {
+
+    private final double[] weights;
+
+    private double bias;
+
+    public TrainableNeuron(
+            int inputCount,
+            Random random) {
+
+        weights =
+            new double[inputCount];
+
+        double scale =
+            1.0 / Math.sqrt(inputCount);
+
+        for (int i = 0;
+             i &lt; inputCount;
+             i++) {
+
+            weights[i] =
+                (random.nextDouble() * 2 - 1)
+                * scale;
+        }
+    }
+
+    public double predict(
+            double[] input) {
+
+        double z = bias;
+
+        for (int i = 0;
+             i &lt; input.length;
+             i++) {
+
+            z +=
+                input[i] * weights[i];
+        }
+
+        return Sigmoid.activate(z);
+    }
+
+    public void train(
+            double[] input,
+            double target,
+            double learningRate) {
+
+        double z = bias;
+
+        for (int i = 0;
+             i &lt; input.length;
+             i++) {
+
+            z +=
+                input[i] * weights[i];
+        }
+
+        double output =
+            Sigmoid.activate(z);
+
+        /*
+         * Mean squared error derivative:
+         *
+         * dL/dOutput = output - target
+         */
+        double dLossDOutput =
+            output - target;
+
+        /*
+         * Sigmoid derivative:
+         *
+         * dOutput/dZ =
+         * sigmoid(Z) * (1 - sigmoid(Z))
+         */
+        double dOutputDZ =
+            output * (1.0 - output);
+
+        /*
+         * Chain rule:
+         *
+         * dLoss/dZ =
+         * dLoss/dOutput *
+         * dOutput/dZ
+         */
+        double dLossDZ =
+            dLossDOutput
+            * dOutputDZ;
+
+        /*
+         * dZ/dWeight = input
+         *
+         * Therefore:
+         *
+         * dLoss/dWeight =
+         * dLoss/dZ * input
+         */
+        for (int i = 0;
+             i &lt; weights.length;
+             i++) {
+
+            double gradient =
+                dLossDZ * input[i];
+
+            weights[i] -=
+                learningRate * gradient;
+        }
+
+        /*
+         * dZ/dBias = 1
+         */
+        bias -=
+            learningRate * dLossDZ;
+    }
+}</code></pre>
+
+<h3>5.6 Backpropagation Through a Layer</h3>
+
+<p>
+    For a dense layer:
+</p>
+
+<div class="math">
+    z = Wx + b
+</div>
+
+<p>
+    Let:
+</p>
+
+<div class="math">
+    δ = ∂L/∂z
+</div>
+
+<p>
+    Then the weight gradient is:
+</p>
+
+<div class="math">
+    ∂L/∂W = δxᵀ
+</div>
+
+<p>
+    and the bias gradient is:
+</p>
+
+<div class="math">
+    ∂L/∂b = δ
+</div>
+
+<p>
+    The gradient that must be sent to the previous layer is:
+</p>
+
+<div class="math">
+    ∂L/∂x = Wᵀδ
+</div>
+
+<h3>5.7 Dense Layer Backward Pass</h3>
+
+<pre><code>public Vector backward(
+        Vector gradient,
+        double learningRate) {
+
+    /*
+     * gradient represents dL/dZ.
+     */
+
+    double[] inputValues =
+        lastInput.toArray();
+
+    /*
+     * Save W^T * gradient before
+     * changing W.
+     */
+    Vector inputGradient =
+        weights.transpose()
+               .multiply(gradient);
+
+    for (int row = 0;
+         row &lt; weights.rows();
+         row++) {
+
+        double outputGradient =
+            gradient.get(row);
+
+        for (int column = 0;
+             column &lt; weights.columns();
+             column++) {
+
+            double weightGradient =
+                outputGradient
+                * inputValues[column];
+
+            /*
+             * Gradient descent:
+             *
+             * W = W - learningRate * dL/dW
+             */
+            double updatedWeight =
+                weights.get(row, column)
+                - learningRate
+                * weightGradient;
+
+            weights.set(
+                row,
+                column,
+                updatedWeight
+            );
+        }
+
+        double updatedBias =
+            biases.get(row)
+            - learningRate
+            * outputGradient;
+
+        biases.set(
+            row,
+            updatedBias
+        );
+    }
+
+    return inputGradient;
+}</code></pre>
+
+<h3>5.8 Why Backpropagation Is Efficient</h3>
+
+<p>
+    A naive approach might slightly change every weight, run the
+    entire network again, and estimate the effect.
+</p>
+
+<p>
+    That would require enormous numbers of forward passes.
+</p>
+
+<p>
+    Backpropagation reuses intermediate calculations and applies
+    the chain rule systematically.
+</p>
+
+<p>
+    This makes it possible to calculate thousands or millions of
+    parameter gradients efficiently.
+</p>
+
+<h3>5.9 Gradient Checking</h3>
+
+<p>
+    Backpropagation is mathematically compact but easy to implement
+    incorrectly.
+</p>
+
+<p>
+    Numerical gradient checking provides an excellent debugging
+    technique.
+</p>
+
+<div class="math">
+    numericalGradient
+    =
+    [L(θ + ε) − L(θ − ε)] / (2ε)
+</div>
+
+<p>
+    We compare this approximation with the gradient produced by
+    backpropagation.
+</p>
+
+<pre><code>static double numericalDerivative(
+        java.util.function.DoubleFunction&lt;Double&gt; function,
+        double x) {
+
+    double epsilon = 1e-5;
+
+    return (
+        function.apply(x + epsilon)
+        -
+        function.apply(x - epsilon)
+    ) / (2.0 * epsilon);
+}</code></pre>
+
+<div class="tip">
+
+If your network learns very slowly or produces completely
+unexpected results, do not immediately assume that the learning
+rate is wrong.
+
+First verify the gradients.
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 6 -->
+<!-- ========================================================= -->
+
+<section id="chapter6" class="chapter">
+
+<h2>
+    Chapter 6:
+    Activation &amp; Loss Functions
+</h2>
+
+<p>
+    Different problems benefit from different activation and loss
+    functions.
+</p>
+
+<h3>6.1 ReLU</h3>
+
+<p>
+    ReLU means Rectified Linear Unit.
+</p>
+
+<div class="math">
+    ReLU(x) = max(0, x)
+</div>
+
+<p>
+    Java:
+</p>
+
+<pre><code>package nn.activation;
+
+public final class ReLU
+        implements ActivationFunction {
+
+    @Override
+    public double activate(
+            double value) {
+
+        return Math.max(0.0, value);
+    }
+
+    @Override
+    public double derivative(
+            double value) {
+
+        return value &gt; 0.0
+                ? 1.0
+                : 0.0;
+    }
+}</code></pre>
+
+<h3>6.2 Why ReLU?</h3>
+
+<p>
+    ReLU is computationally simple and works well in many hidden
+    layers.
+</p>
+
+<p>
+    Unlike sigmoid, its positive region does not saturate as quickly.
+</p>
+
+<p>
+    However, neurons can become permanently inactive when they
+    remain on the negative side.
+</p>
+
+<h3>6.3 Softmax</h3>
+
+<p>
+    Softmax converts a collection of arbitrary scores into
+    probabilities whose sum equals one.
+</p>
+
+<div class="math">
+    softmax(zᵢ)
+    =
+    eᶻⁱ / Σⱼ eᶻʲ
+</div>
+
+<p>
+    A naive implementation can overflow when values become large.
+    We therefore subtract the largest input first.
+</p>
+
+<pre><code>package nn.activation;
+
+public final class Softmax {
+
+    private Softmax() {
+    }
+
+    public static double[] activate(
+            double[] values) {
+
+        double maximum =
+            Double.NEGATIVE_INFINITY;
+
+        for (double value : values) {
+
+            maximum =
+                Math.max(maximum, value);
+        }
+
+        double[] exponentials =
+            new double[values.length];
+
+        double sum = 0.0;
+
+        for (int i = 0;
+             i &lt; values.length;
+             i++) {
+
+            /*
+             * Subtracting the maximum does not
+             * change the final probability ratio,
+             * but greatly improves numerical stability.
+             */
+            exponentials[i] =
+                Math.exp(values[i] - maximum);
+
+            sum += exponentials[i];
+        }
+
+        double[] probabilities =
+            new double[values.length];
+
+        for (int i = 0;
+             i &lt; values.length;
+             i++) {
+
+            probabilities[i] =
+                exponentials[i] / sum;
+        }
+
+        return probabilities;
+    }
+}</code></pre>
+
+<h3>6.4 Mean Squared Error</h3>
+
+<p>
+    Mean squared error measures the average squared difference
+    between prediction and target.
+</p>
+
+<div class="math">
+    MSE =
+    1/n Σ(ŷᵢ − yᵢ)²
+</div>
+
+<pre><code>package nn.loss;
+
+public final class MeanSquaredError {
+
+    private MeanSquaredError() {
+    }
+
+    public static double calculate(
+            double[] prediction,
+            double[] target) {
+
+        if (prediction.length !=
+            target.length) {
+
+            throw new IllegalArgumentException(
+                "Prediction and target sizes differ"
+            );
+        }
+
+        double sum = 0.0;
+
+        for (int i = 0;
+             i &lt; prediction.length;
+             i++) {
+
+            double difference =
+                prediction[i] - target[i];
+
+            sum +=
+                difference * difference;
+        }
+
+        return sum / prediction.length;
+    }
+}</code></pre>
+
+<h3>6.5 Cross-Entropy</h3>
+
+<p>
+    For classification problems, cross-entropy is often more
+    appropriate than MSE.
+</p>
+
+<p>
+    For one correct class:
+</p>
+
+<div class="math">
+    L = −log(p)
+</div>
+
+<p>
+    where p is the predicted probability assigned to the correct
+    class.
+</p>
+
+<pre><code>package nn.loss;
+
+public final class CrossEntropy {
+
+    private CrossEntropy() {
+    }
+
+    public static double calculate(
+            double[] probabilities,
+            int correctClass) {
+
+        double probability =
+            probabilities[correctClass];
+
+        /*
+         * Avoid log(0).
+         */
+        probability =
+            Math.max(
+                probability,
+                1e-15
+            );
+
+        return -Math.log(probability);
+    }
+}</code></pre>
+
+<h3>6.6 Why Softmax and Cross-Entropy Work Well Together</h3>
+
+<p>
+    When softmax is combined with cross-entropy, the derivative
+    becomes especially elegant.
+</p>
+
+<p>
+    For each output class:
+</p>
+
+<div class="math">
+    ∂L/∂zᵢ = pᵢ − yᵢ
+</div>
+
+<p>
+    where p is the softmax probability vector and y is the
+    one-hot target vector.
+</p>
+
+<p>
+    This simple expression is one of the most useful formulas
+    in practical neural-network implementation.
+</p>
+
+<h3>6.7 One-Hot Encoding</h3>
+
+<p>
+    Suppose the classes are:
+</p>
+
+<pre><code>0 = cat
+1 = dog
+2 = bird</code></pre>
+
+<p>
+    If the correct class is dog:
+</p>
+
+<pre><code>[0, 1, 0]</code></pre>
+
+<p>
+    If the network predicts:
+</p>
+
+<pre><code>[0.10, 0.80, 0.10]</code></pre>
+
+<p>
+    the model has assigned 80% probability to the correct class.
+</p>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 7 -->
+<!-- ========================================================= -->
+
+<section id="chapter7" class="chapter">
+
+<h2>
+    Chapter 7:
+    Training the Network
+</h2>
+
+<p>
+    We now have almost every ingredient required to train a neural
+    network.
+</p>
+
+<p>
+    Training repeatedly follows this basic cycle:
+</p>
+
+<ol>
+
+    <li>Choose training examples.</li>
+
+    <li>Run forward propagation.</li>
+
+    <li>Calculate the loss.</li>
+
+    <li>Calculate gradients.</li>
+
+    <li>Run backward propagation.</li>
+
+    <li>Update parameters.</li>
+
+    <li>Repeat.</li>
+
+</ol>
+
+<h3>7.1 Epochs</h3>
+
+<p>
+    One epoch means that the training algorithm has processed the
+    entire training dataset once.
+</p>
+
+<p>
+    A dataset might require dozens or thousands of epochs depending
+    on the problem.
+</p>
+
+<h3>7.2 Batch Size</h3>
+
+<p>
+    Instead of updating parameters after every individual example,
+    we can process a group of examples.
+</p>
+
+<p>
+    Such a group is called a batch.
+</p>
+
+<p>
+    Common strategies include:
+</p>
+
+<ul>
+
+    <li>
+        <strong>Batch gradient descent:</strong>
+        use the entire dataset.
+    </li>
+
+    <li>
+        <strong>Stochastic gradient descent:</strong>
+        use one example.
+    </li>
+
+    <li>
+        <strong>Mini-batch gradient descent:</strong>
+        use a small group.
+    </li>
+
+</ul>
+
+<h3>7.3 Training Data Representation</h3>
+
+<pre><code>public final class TrainingExample {
+
+    private final double[] input;
+
+    private final double[] target;
+
+    public TrainingExample(
+            double[] input,
+            double[] target) {
+
+        this.input = input.clone();
+        this.target = target.clone();
+    }
+
+    public double[] input() {
+
+        return input.clone();
+    }
+
+    public double[] target() {
+
+        return target.clone();
+    }
+}</code></pre>
+
+<h3>7.4 Shuffling</h3>
+
+<p>
+    If the training data is presented in exactly the same order
+    every epoch, the order can introduce undesirable correlations.
+</p>
+
+<p>
+    Java provides a convenient solution:
+</p>
+
+<pre><code>java.util.Collections.shuffle(
+    trainingExamples,
+    random
+);</code></pre>
+
+<h3>7.5 A Basic Training Loop</h3>
+
+<pre><code>for (int epoch = 0;
+     epoch &lt; epochs;
+     epoch++) {
+
+    java.util.Collections.shuffle(
+        trainingExamples,
+        random
+    );
+
+    double totalLoss = 0.0;
+
+    for (TrainingExample example :
+            trainingExamples) {
+
+        Vector input =
+            new Vector(example.input());
+
+        Vector target =
+            new Vector(example.target());
+
+        /*
+         * Forward pass.
+         */
+        Vector prediction =
+            network.predict(input);
+
+        /*
+         * Calculate loss.
+         */
+        double loss =
+            calculateLoss(
+                prediction,
+                target
+            );
+
+        totalLoss += loss;
+
+        /*
+         * Backward pass.
+         *
+         * The network calculates gradients
+         * and updates its parameters.
+         */
+        network.backward(
+            target,
+            learningRate
+        );
+    }
+
+    double averageLoss =
+        totalLoss
+        / trainingExamples.size();
+
+    System.out.printf(
+        "Epoch %d - Loss: %.6f%n",
+        epoch + 1,
+        averageLoss
+    );
+}</code></pre>
+
+<h3>7.6 Learning Rate</h3>
+
+<p>
+    The learning rate controls the size of each parameter update.
+</p>
+
+<p>
+    If the learning rate is too large, training can become unstable.
+</p>
+
+<p>
+    If it is too small, training may be painfully slow.
+</p>
+
+<p>
+    For a simple network, values such as:
+</p>
+
+<pre><code>0.1
+0.01
+0.001</code></pre>
+
+<p>
+    are useful starting points.
+</p>
+
+<h3>7.7 Training Metrics</h3>
+
+<p>
+    We should not blindly train and hope for the best.
+</p>
+
+<p>
+    At minimum, print:
+</p>
+
+<ul>
+    <li>Epoch</li>
+    <li>Training loss</li>
+    <li>Validation loss</li>
+    <li>Accuracy</li>
+</ul>
+
+<p>
+    Example:
+</p>
+
+<pre><code>Epoch 1   Loss=0.6912   Accuracy=51.2%
+Epoch 2   Loss=0.6481   Accuracy=61.8%
+Epoch 3   Loss=0.5214   Accuracy=73.5%
+Epoch 4   Loss=0.3918   Accuracy=82.1%</code></pre>
+
+<h3>7.8 Overfitting</h3>
+
+<p>
+    A network can memorize its training data without learning
+    patterns that generalize to unseen examples.
+</p>
+
+<p>
+    This is called overfitting.
+</p>
+
+<p>
+    A useful warning sign is:
+</p>
+
+<div class="math">
+    training loss ↓
+    while
+    validation loss ↑
+</div>
+
+<p>
+    The network is becoming increasingly confident on the examples
+    it has already seen but worse on unseen examples.
+</p>
+
+<h3>7.9 Deterministic Experiments</h3>
+
+<p>
+    Always consider using a fixed random seed while developing:
+</p>
+
+<pre><code>Random random =
+    new Random(42);</code></pre>
+
+<p>
+    This makes experiments repeatable.
+</p>
+
+<div class="tip">
+
+Once your implementation is correct, you can remove the fixed seed
+for experiments where you want different random initializations.
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- CHAPTER 8 -->
+<!-- ========================================================= -->
+
+<section id="chapter8" class="chapter">
+
+<h2>
+    Chapter 8:
+    Evaluation, XOR &amp; MNIST
+</h2>
+
+<p>
+    We have reached the point where all the individual pieces can
+    be combined into complete machine-learning experiments.
+</p>
+
+<p>
+    We will begin with XOR because it is small enough to inspect
+    manually.
+</p>
+
+<p>
+    We will then move to MNIST, where each example is a handwritten
+    digit.
+</p>
+
+<h3>8.1 Why XOR?</h3>
+
+<p>
+    XOR is a classic neural-network problem.
+</p>
+
+<table>
+
+<thead>
+<tr>
+    <th>A</th>
+    <th>B</th>
+    <th>XOR</th>
+</tr>
+</thead>
+
+<tbody>
+
+<tr>
+    <td>0</td>
+    <td>0</td>
+    <td>0</td>
+</tr>
+
+<tr>
+    <td>0</td>
+    <td>1</td>
+    <td>1</td>
+</tr>
+
+<tr>
+    <td>1</td>
+    <td>0</td>
+    <td>1</td>
+</tr>
+
+<tr>
+    <td>1</td>
+    <td>1</td>
+    <td>0</td>
+</tr>
+
+</tbody>
+</table>
+
+<p>
+    XOR cannot be solved by a single linear perceptron.
+    It therefore provides a compact demonstration of why hidden
+    nonlinear layers are useful.
+</p>
+
+<h3>8.2 XOR Network</h3>
+
+<p>
+    We can use:
+</p>
+
+<pre><code>2 inputs
+    ↓
+4 sigmoid neurons
+    ↓
+1 sigmoid neuron
+    ↓
+prediction</code></pre>
+
+<h3>8.3 XOR Dataset</h3>
+
+<pre><code>List&lt;TrainingExample&gt; xor =
+    List.of(
+
+        new TrainingExample(
+            new double[] {0, 0},
+            new double[] {0}
+        ),
+
+        new TrainingExample(
+            new double[] {0, 1},
+            new double[] {1}
+        ),
+
+        new TrainingExample(
+            new double[] {1, 0},
+            new double[] {1}
+        ),
+
+        new TrainingExample(
+            new double[] {1, 1},
+            new double[] {0}
+        )
+    );</code></pre>
+
+<h3>8.4 Training XOR</h3>
+
+<pre><code>Random random =
+    new Random(42);
+
+NeuralNetwork network =
+    new NeuralNetwork();
+
+network.add(
+    new DenseLayer(
+        2,
+        4,
+        random
+    )
+);
+
+network.add(
+    new ActivationLayer(
+        new SigmoidActivation()
+    )
+);
+
+network.add(
+    new DenseLayer(
+        4,
+        1,
+        random
+    )
+);
+
+network.add(
+    new ActivationLayer(
+        new SigmoidActivation()
+    )
+);</code></pre>
+
+<h3>8.5 Expected Output</h3>
+
+<p>
+    After successful training, predictions should approach:
+</p>
+
+<pre><code>Input       Expected    Prediction
+
+0, 0          0         ~0.0
+0, 1          1         ~1.0
+1, 0          1         ~1.0
+1, 1          0         ~0.0</code></pre>
+
+<p>
+    The exact values will vary according to initialization,
+    architecture, learning rate, and training procedure.
+</p>
+
+<h3>8.6 Classification Threshold</h3>
+
+<p>
+    If our binary classifier produces a sigmoid output, we can use
+    0.5 as a basic decision threshold.
+</p>
+
+<pre><code>int predictedClass =
+    prediction &gt;= 0.5
+        ? 1
+        : 0;</code></pre>
+
+<h3>8.7 Accuracy</h3>
+
+<p>
+    Accuracy is:
+</p>
+
+<div class="math">
+    accuracy =
+    correctPredictions / totalPredictions
+</div>
+
+<pre><code>public static double accuracy(
+        int[] predicted,
+        int[] actual) {
+
+    if (predicted.length != actual.length) {
+        throw new IllegalArgumentException(
+            "Array lengths differ"
+        );
+    }
+
+    int correct = 0;
+
+    for (int i = 0;
+         i &lt; predicted.length;
+         i++) {
+
+        if (predicted[i] == actual[i]) {
+            correct++;
+        }
+    }
+
+    return
+        (double) correct
+        / predicted.length;
+}</code></pre>
+
+<h3>8.8 Moving to MNIST</h3>
+
+<p>
+    MNIST contains grayscale images of handwritten digits from
+    0 through 9.
+</p>
+
+<p>
+    Each image contains:
+</p>
+
+<div class="math">
+    28 × 28 = 784
+</div>
+
+<p>
+    pixels.
+</p>
+
+<p>
+    Therefore, the input to our network can be represented as a
+    vector containing 784 values.
+</p>
+
+<h3>8.9 Pixel Normalization</h3>
+
+<p>
+    MNIST pixel values are normally represented as unsigned
+    8-bit values from 0 to 255.
+</p>
+
+<p>
+    Neural networks generally benefit from smaller numerical
+    ranges.
+</p>
+
+<p>
+    We can normalize:
+</p>
+
+<div class="math">
+    normalizedPixel = pixel / 255.0
+</div>
+
+<h3>8.10 Reading Binary Data in Java</h3>
+
+<p>
+    We do not need an external dataset library.
+    Java's DataInputStream can read the MNIST binary format.
+</p>
+
+<pre><code>package nn.data;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+public final class MnistReader {
+
+    private MnistReader() {
+    }
+
+    public static Dataset readImages(
+            InputStream inputStream)
+            throws IOException {
+
+        DataInputStream input =
+            new DataInputStream(inputStream);
+
+        int magic =
+            input.readInt();
+
+        int imageCount =
+            input.readInt();
+
+        int rows =
+            input.readInt();
+
+        int columns =
+            input.readInt();
+
+        if (magic != 2051) {
+
+            throw new IOException(
+                "Invalid MNIST image file"
+            );
+        }
+
+        double[][] images =
+            new double[imageCount]
+                       [rows * columns];
+
+        for (int image = 0;
+             image &lt; imageCount;
+             image++) {
+
+            for (int pixel = 0;
+                 pixel &lt; rows * columns;
+                 pixel++) {
+
+                int value =
+                    input.readUnsignedByte();
+
+                images[image][pixel] =
+                    value / 255.0;
+            }
+        }
+
+        return new Dataset(
+            images,
+            rows,
+            columns
+        );
+    }
+
+    public record Dataset(
+            double[][] images,
+            int rows,
+            int columns
+    ) {
+    }
+}</code></pre>
+
+<h3>8.11 Reading MNIST Labels</h3>
+
+<pre><code>public static int[] readLabels(
+        InputStream inputStream)
+        throws IOException {
+
+    DataInputStream input =
+        new DataInputStream(inputStream);
+
+    int magic =
+        input.readInt();
+
+    int count =
+        input.readInt();
+
+    if (magic != 2049) {
+
+        throw new IOException(
+            "Invalid MNIST label file"
+        );
+    }
+
+    int[] labels =
+        new int[count];
+
+    for (int i = 0;
+         i &lt; count;
+         i++) {
+
+        labels[i] =
+            input.readUnsignedByte();
+    }
+
+    return labels;
+}</code></pre>
+
+<h3>8.12 Converting a Label to One-Hot Encoding</h3>
+
+<pre><code>public static double[] oneHot(
+        int label) {
+
+    double[] result =
+        new double[10];
+
+    if (label &lt; 0 ||
+        label &gt; 9) {
+
+        throw new IllegalArgumentException(
+            "MNIST label must be between 0 and 9"
+        );
+    }
+
+    result[label] = 1.0;
+
+    return result;
+}</code></pre>
+
+<h3>8.13 MNIST Network Architecture</h3>
+
+<p>
+    A simple network might contain:
+</p>
+
+<pre><code>784 inputs
+    ↓
+128 neurons
+    ↓
+ReLU
+    ↓
+64 neurons
+    ↓
+ReLU
+    ↓
+10 neurons
+    ↓
+Softmax
+</code></pre>
+
+<p>
+    The final ten outputs correspond to:
+</p>
+
+<pre><code>0 1 2 3 4 5 6 7 8 9</code></pre>
+
+<h3>8.14 Why Ten Outputs?</h3>
+
+<p>
+    The network needs to produce one score for every possible digit.
+</p>
+
+<p>
+    For example:
+</p>
+
+<pre><code>Digit       Probability
+
+0           0.001
+1           0.002
+2           0.004
+3           0.003
+4           0.010
+5           0.015
+6           0.002
+7           0.900
+8           0.020
+9           0.043</code></pre>
+
+<p>
+    The predicted digit is the index with the largest probability.
+</p>
+
+<h3>8.15 Argmax</h3>
+
+<pre><code>public static int argmax(
+        double[] values) {
+
+    int bestIndex = 0;
+
+    double bestValue =
+        values[0];
+
+    for (int i = 1;
+         i &lt; values.length;
+         i++) {
+
+        if (values[i] &gt; bestValue) {
+
+            bestValue =
+                values[i];
+
+            bestIndex =
+                i;
+        }
+    }
+
+    return bestIndex;
+}</code></pre>
+
+<h3>8.16 Displaying an MNIST Image in the Terminal</h3>
+
+<p>
+    We can even render an image using ordinary characters.
+</p>
+
+<pre><code>public static void printImage(
+        double[] pixels,
+        int rows,
+        int columns) {
+
+    for (int row = 0;
+         row &lt; rows;
+         row++) {
+
+        for (int column = 0;
+             column &lt; columns;
+             column++) {
+
+            double value =
+                pixels[
+                    row * columns + column
+                ];
+
+            char character;
+
+            if (value &gt; 0.75) {
+                character = '#';
+            } else if (value &gt; 0.50) {
+                character = 'O';
+            } else if (value &gt; 0.25) {
+                character = '+';
+            } else if (value &gt; 0.05) {
+                character = '.';
+            } else {
+                character = ' ';
+            }
+
+            System.out.print(character);
+        }
+
+        System.out.println();
+    }
+}</code></pre>
+
+<h3>8.17 Evaluating MNIST</h3>
+
+<p>
+    A basic evaluation procedure is:
+</p>
+
+<ol>
+
+    <li>Load the test images.</li>
+
+    <li>Load the test labels.</li>
+
+    <li>Run every image through the network.</li>
+
+    <li>Find the output with the highest probability.</li>
+
+    <li>Compare it with the known label.</li>
+
+    <li>Count correct predictions.</li>
+
+</ol>
+
+<h3>8.18 Confusion Matrix</h3>
+
+<p>
+    Accuracy tells us how many predictions are correct, but it does
+    not tell us which digits are confused with each other.
+</p>
+
+<p>
+    A confusion matrix solves this problem.
+</p>
+
+<pre><code>int[][] confusionMatrix =
+    new int[10][10];
+
+for (int i = 0;
+     i &lt; predictions.length;
+     i++) {
+
+    int actual =
+        labels[i];
+
+    int predicted =
+        predictions[i];
+
+    confusionMatrix[actual][predicted]++;
+}</code></pre>
+
+<p>
+    The row represents the actual digit.
+    The column represents the predicted digit.
+</p>
+
+<h3>8.19 Improving the Pure-Java Implementation</h3>
+
+<p>
+    Once the implementation works, performance becomes an
+    engineering problem.
+</p>
+
+<p>
+    Useful improvements include:
+</p>
+
+<ul>
+
+    <li>
+        Reduce unnecessary object allocation.
+    </li>
+
+    <li>
+        Reuse arrays where practical.
+    </li>
+
+    <li>
+        Prefer contiguous primitive arrays for hot loops.
+    </li>
+
+    <li>
+        Avoid repeated conversion between arrays and objects.
+    </li>
+
+    <li>
+        Profile before optimizing.
+    </li>
+
+    <li>
+        Use batch matrix operations where appropriate.
+    </li>
+
+</ul>
+
+<h3>8.20 Why We Still Do Not Need an ML Library</h3>
+
+<p>
+    At this point, we have implemented the essential concepts behind
+    a small neural-network framework ourselves:
+</p>
+
+<ul>
+
+    <li>Numerical vectors</li>
+
+    <li>Matrices</li>
+
+    <li>Matrix multiplication</li>
+
+    <li>Transpose</li>
+
+    <li>Neurons</li>
+
+    <li>Dense layers</li>
+
+    <li>Activation functions</li>
+
+    <li>Loss functions</li>
+
+    <li>Forward propagation</li>
+
+    <li>Backpropagation</li>
+
+    <li>Gradient descent</li>
+
+    <li>Training loops</li>
+
+    <li>Dataset loading</li>
+
+    <li>Classification</li>
+
+    <li>Evaluation</li>
+
+</ul>
+
+<h3>8.21 Final Project Architecture</h3>
+
+<p>
+    A complete implementation can eventually look like:
+</p>
+
+<pre><code>src/main/java/nn/
+
+├── Main.java
+│
+├── math/
+│   ├── Vector.java
+│   └── Matrix.java
+│
+├── activation/
+│   ├── ActivationFunction.java
+│   ├── SigmoidActivation.java
+│   ├── ReLU.java
+│   └── Softmax.java
+│
+├── loss/
+│   ├── MeanSquaredError.java
+│   └── CrossEntropy.java
+│
+├── layer/
+│   ├── Layer.java
+│   ├── DenseLayer.java
+│   └── ActivationLayer.java
+│
+├── network/
+│   ├── NeuralNetwork.java
+│   └── TrainableNeuron.java
+│
+├── training/
+│   ├── Trainer.java
+│   └── TrainingExample.java
+│
+└── data/
+    └── MnistReader.java</code></pre>
+
+<h3>8.22 Final Checklist</h3>
+
+<div class="exercise">
+
+By the end of this book, you should be able to answer all of the
+following:
+
+<ul>
+
+    <li>
+        What does a neuron calculate?
+    </li>
+
+    <li>
+        Why do neural networks need weights?
+    </li>
+
+    <li>
+        What is the purpose of a bias?
+    </li>
+
+    <li>
+        What is a dot product?
+    </li>
+
+    <li>
+        How does matrix multiplication work?
+    </li>
+
+    <li>
+        Why is transposition useful?
+    </li>
+
+    <li>
+        What does an activation function do?
+    </li>
+
+    <li>
+        What is a loss function?
+    </li>
+
+    <li>
+        What is a derivative?
+    </li>
+
+    <li>
+        What does a gradient represent?
+    </li>
+
+    <li>
+        How does gradient descent update a parameter?
+    </li>
+
+    <li>
+        How does the chain rule enable backpropagation?
+    </li>
+
+    <li>
+        Why does a hidden nonlinear layer allow a network to
+        solve XOR?
+    </li>
+
+    <li>
+        Why does a classification network commonly use softmax
+        at its output?
+    </li>
+
+    <li>
+        How can MNIST be read without an external machine-learning
+        library?
+    </li>
+
+</ul>
+
+</div>
+
+<h3>8.23 The Bigger Picture</h3>
+
+<p>
+    A neural network can look like an enormous and complicated
+    system when viewed from the outside.
+</p>
+
+<p>
+    But at its foundation, the system is a composition of relatively
+    simple operations.
+</p>
+
+<div class="math">
+    numbers
+    → multiplication
+    → addition
+    → nonlinear transformation
+    → error measurement
+    → derivatives
+    → parameter updates
+</div>
+
+<p>
+    Repeat those operations many times, and the system learns.
+</p>
+
+<p>
+    That is the central idea.
+</p>
+
+<p>
+    The power of modern neural networks comes not from one mysterious
+    equation, but from composing simple mathematical operations
+    into large systems and efficiently optimizing their parameters.
+</p>
+
+<div class="note">
+
+<strong>Final principle:</strong>
+
+You do not need a machine-learning framework to understand a neural
+network.
+
+Frameworks are useful engineering tools, but understanding begins
+when you can look at the underlying operations and explain what
+every multiplication, addition, derivative, and parameter update
+is doing.
+
+</div>
+
+</section>
+
+<!-- ========================================================= -->
+<!-- APPENDIX -->
+<!-- ========================================================= -->
+
+<section class="chapter">
+
+<h2>
+    Appendix A: Minimal Pure-Java Example
+</h2>
+
+<p>
+    The following compact example demonstrates the central idea
+    behind a trainable binary neuron.
+</p>
+
+<pre><code>import java.util.Random;
+
+public class SimpleNeuron {
+
+    private final double[] weights;
+
+    private double bias;
+
+    public SimpleNeuron(
+            int inputCount,
+            Random random) {
+
+        weights =
+            new double[inputCount];
+
+        for (int i = 0;
+             i &lt; inputCount;
+             i++) {
+
+            weights[i] =
+                random.nextDouble() - 0.5;
+        }
+    }
+
+    private double sigmoid(
+            double value) {
+
+        return 1.0 /
+            (1.0 + Math.exp(-value));
+    }
+
+    public double predict(
+            double[] input) {
+
+        double z = bias;
+
+        for (int i = 0;
+             i &lt; weights.length;
+             i++) {
+
+            z +=
+                weights[i]
+                * input[i];
+        }
+
+        return sigmoid(z);
+    }
+
+    public void train(
+            double[] input,
+            double target,
+            double learningRate) {
+
+        double z = bias;
+
+        for (int i = 0;
+             i &lt; weights.length;
+             i++) {
+
+            z +=
+                weights[i]
+                * input[i];
+        }
+
+        double output =
+            sigmoid(z);
+
+        /*
+         * MSE derivative with respect
+         * to the output.
+         */
+        double dLossDOutput =
+            output - target;
+
+        /*
+         * Sigmoid derivative.
+         */
+        double dOutputDZ =
+            output * (1.0 - output);
+
+        /*
+         * Chain rule.
+         */
+        double dLossDZ =
+            dLossDOutput
+            * dOutputDZ;
+
+        /*
+         * Update each weight.
+         */
+        for (int i = 0;
+             i &lt; weights.length;
+             i++) {
+
+            double gradient =
+                dLossDZ * input[i];
+
+            weights[i] -=
+                learningRate * gradient;
+        }
+
+        /*
+         * Since dZ/dBias = 1,
+         * the bias gradient is dLossDZ.
+         */
+        bias -=
+            learningRate * dLossDZ;
+    }
+
+    public static void main(
+            String[] args) {
+
+        Random random =
+            new Random(42);
+
+        SimpleNeuron neuron =
+            new SimpleNeuron(
+                2,
+                random
+            );
+
+        double[][] inputs = {
+
+            {0, 0},
+            {0, 1},
+            {1, 0},
+            {1, 1}
+        };
+
+        double[] targets = {
+
+            0,
+            1,
+            1,
+            1
+        };
+
+        for (int epoch = 0;
+             epoch &lt; 5000;
+             epoch++) {
+
+            for (int i = 0;
+                 i &lt; inputs.length;
+                 i++) {
+
+                neuron.train(
+                    inputs[i],
+                    targets[i],
+                    0.1
+                );
+            }
+        }
+
+        for (double[] input : inputs) {
+
+            System.out.printf(
+                "[%.0f, %.0f] -> %.4f%n",
+                input[0],
+                input[1],
+                neuron.predict(input)
+            );
+        }
+    }
+}</code></pre>
+
+</section>
+
+</main>
+
+<footer>
+    <div class="container">
+
+        <p>
+            <strong>
+                Neural Networks from Scratch in Pure Java
+            </strong>
+        </p>
+
+        <p>
+            Java 17+ · Standard Library Only ·
+            Built from First Principles
+        </p>
+
+        <p class="small">
+            This educational implementation prioritizes clarity
+            and understanding over production-scale performance.
+        </p>
+
+    </div>
+</footer>
+
+</body>
+</html>

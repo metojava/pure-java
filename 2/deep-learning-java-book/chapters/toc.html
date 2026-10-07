@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Table of Contents - Neural Networks from Scratch in Pure Java">
+    <title>Table of Contents - Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Table of Contents</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra & Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>The Core of Learning – Backpropagation & Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation & Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation & Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <span>Table of Contents</span>
+                </nav>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <h1>Table of Contents</h1>
+                    <p class="chapter-subtitle">Neural Networks from Scratch in Pure Java</p>
+                </header>
+
+                <section class="toc-section">
+                    <h2>Preface</h2>
+                    <div class="toc-chapter">
+                        <h3>How to Read This Book</h3>
+                        <p>This book is written for Java developers who want to understand neural networks at a fundamental level. Every concept is built from the ground up using only the Java Standard Edition library. No external dependencies, no black boxes.</p>
+                        <p><strong>Code-first approach:</strong> Mathematical concepts are introduced alongside their Java implementations. You'll see the math, then immediately see how it translates to code.</p>
+                        <p><strong>Prerequisites:</strong> Comfortable with Java 17+ classes, arrays, loops, and methods. We introduce the algebra, derivatives, and matrix notation as they become useful.</p>
+                    </div>
+
+                    <h3>Why Pure Java?</h3>
+                    <ul>
+                        <li><strong>No magic:</strong> When you implement backpropagation yourself, you truly understand it</li>
+                        <li><strong>Tooling:</strong> Use the JDK compiler, debugger, and profiler to inspect your own numerical code</li>
+                        <li><strong>Portability:</strong> Runs on platforms with a compatible Java 17+ runtime</li>
+                        <li><strong>Clarity:</strong> Every array index and gradient can be inspected directly</li>
+                        <li><strong>Team adoption:</strong> Your Java team can read, maintain, and extend this code without learning Python</li>
+                    </ul>
+                </section>
+
+                <section class="toc-section">
+                    <h2>Part I: Foundations</h2>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 1</span>
+                            <h3>Introduction to Neural Networks & Why Pure Java?</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>What is a neural network?</strong> Biological inspiration vs. mathematical reality</li>
+                            <li><strong>The universal approximation theorem</strong> — why they work (intuitively)</li>
+                            <li><strong>Why build from scratch?</strong> Understanding vs. using</li>
+                            <li><strong>The JVM advantage</strong> — JIT, memory layout, and debugging tools</li>
+                            <li><strong>Project setup</strong> — JDK-only commands and optional Maven configuration</li>
+                            <li><strong>Development workflow</strong> — running, testing, debugging neural network code</li>
+                            <li><strong>Code conventions</strong> — naming, immutability, performance considerations</li>
+                        </ul>
+                        <a href="chapter1.html" class="toc-read-link">Read Chapter 1 →</a>
+                    </article>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 2</span>
+                            <h3>The Math Blueprint – Linear Algebra & Calculus in Java</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>Vectors in Java</strong> — <code>Vector</code> class, dot products, magnitude, normalization</li>
+                            <li><strong>Matrices in Java</strong> — <code>Matrix</code> class, row-major storage, dimensions</li>
+                            <li><strong>Matrix multiplication</strong> — the heart of forward/backward passes, optimized loops</li>
+                            <li><strong>Transposition & reshaping</strong> — preparing data for layer operations</li>
+                            <li><strong>Element-wise operations</strong> — Hadamard product, broadcasting, activation applications</li>
+                            <li><strong>Calculus primitives</strong> — numerical derivatives, partial derivatives, gradient vectors</li>
+                            <li><strong>Testing our math</strong> — unit tests for every operation, property-based testing</li>
+                        </ul>
+                        <a href="chapter2.html" class="toc-read-link">Read Chapter 2 →</a>
+                    </article>
+                </section>
+
+                <section class="toc-section">
+                    <h2>Part II: The Neuron</h2>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 3</span>
+                            <h3>The Architecture of a Neuron</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>Perceptron model</strong> — weights, bias, weighted sum</li>
+                            <li><strong>Activation functions</strong> — Step, Sigmoid, Identity, and derivatives</li>
+                            <li><strong>Forward pass</strong> — the dot product, bias, and output</li>
+                            <li><strong>Decision boundaries</strong> — what one neuron can represent</li>
+                            <li><strong>Limitations</strong> — why one neuron cannot solve XOR</li>
+                            <li><strong>Implementation</strong> — <code>Neuron</code> and <code>Activation</code> in Java SE</li>
+                        </ul>
+                        <a href="chapter3.html" class="toc-read-link">Read Chapter 3 →</a>
+                    </article>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 4</span>
+                            <h3>Building the Network Layers</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>Dense layers</strong> — row-major batches, weights, and biases</li>
+                            <li><strong>Forward propagation</strong> — matrix products and per-entry activations</li>
+                            <li><strong>Stacking layers</strong> — composing a multi-layer <code>Network</code></li>
+                            <li><strong>Input/output dimensions</strong> — validating every layer boundary</li>
+                            <li><strong>Initialization</strong> — seeded Gaussian weights and reproducible runs</li>
+                            <li><strong>Implementation</strong> — <code>DenseLayer</code> and <code>Network</code></li>
+                        </ul>
+                        <a href="chapter4.html" class="toc-read-link">Read Chapter 4 →</a>
+                    </article>
+                </section>
+
+                <section class="toc-section">
+                    <h2>Part III: Learning</h2>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 5</span>
+                            <h3>The Core of Learning – Backpropagation & Gradient Descent</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>The chain rule</strong> — deriving output and hidden layer deltas</li>
+                            <li><strong>Mean squared error</strong> — objective and exact derivative</li>
+                            <li><strong>Weight gradients</strong> — transposed activations times deltas</li>
+                            <li><strong>Bias gradients</strong> — summing the deltas over the batch</li>
+                            <li><strong>Gradient descent</strong> — update only after all gradients are computed</li>
+                            <li><strong>Gradient checks</strong> — compare against finite differences</li>
+                        </ul>
+                        <a href="chapter5.html" class="toc-read-link">Read Chapter 5 →</a>
+                    </article>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 6</span>
+                            <h3>Activation & Loss Functions</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>ReLU</strong> — its derivative, vanishing gradients, and dead units</li>
+                            <li><strong>Softmax</strong> — stable row-wise probabilities from logits</li>
+                            <li><strong>Loss functions</strong> — squared error versus cross-entropy</li>
+                            <li><strong>Fused gradient</strong> — softmax plus cross-entropy</li>
+                            <li><strong>Numerical stability</strong> — max subtraction and log-sum-exp</li>
+                            <li><strong>Implementation</strong> — <code>ReLU</code>, <code>Softmax</code>, and <code>SoftmaxCrossEntropy</code></li>
+                        </ul>
+                        <a href="chapter6.html" class="toc-read-link">Read Chapter 6 →</a>
+                    </article>
+                </section>
+
+                <section class="toc-section">
+                    <h2>Part IV: Application</h2>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 7</span>
+                            <h3>Training the Network</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>Training loop anatomy</strong> — epochs, batches, and updates</li>
+                            <li><strong>Dataset validation</strong> — input and target rows stay aligned</li>
+                            <li><strong>Mini-batches</strong> — seeded shuffling and the final short batch</li>
+                            <li><strong>Monitoring</strong> — sample-weighted epoch loss and held-out data</li>
+                            <li><strong>Practical run</strong> — learn the AND gate</li>
+                            <li><strong>Implementation</strong> — <code>Dataset</code> and <code>Trainer</code></li>
+                        </ul>
+                        <a href="chapter7.html" class="toc-read-link">Read Chapter 7 →</a>
+                    </article>
+
+                    <article class="toc-chapter">
+                        <header>
+                            <span class="chapter-badge">Chapter 8</span>
+                            <h3>Evaluation & Testing</h3>
+                        </header>
+                        <ul class="toc-topics">
+                            <li><strong>XOR</strong> — demonstrate the need for hidden nonlinear units</li>
+                            <li><strong>MNIST digits</strong> — parse raw IDX images and labels in Java</li>
+                            <li><strong>Classification</strong> — train with ReLU, logits, and softmax cross-entropy</li>
+                            <li><strong>Evaluation</strong> — held-out accuracy and confusion matrix</li>
+                            <li><strong>Testing</strong> — IDX validation, truncated inputs, and gzip</li>
+                            <li><strong>Next steps</strong> — understand the limits of a dense network</li>
+                        </ul>
+                        <a href="chapter8.html" class="toc-read-link">Read Chapter 8 →</a>
+                    </article>
+                </section>
+
+                <nav class="chapter-nav" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border);">
+                    <a href="../index.html" class="btn btn-secondary">← Back to Home</a>
+                    <a href="chapter1.html" class="btn btn-primary">Start Reading: Chapter 1 →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Building Neural Networks Without Libraries</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">
+                Written for intermediate Java developers • Pure Java SE • No external dependencies
+            </p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

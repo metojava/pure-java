@@ -1,0 +1,17 @@
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\Main.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\activation\ActivationFunction.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\activation\ReLU.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\activation\SigmoidActivation.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\activation\Softmax.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\data\MnistReader.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\layer\ActivationLayer.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\layer\DenseLayer.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\layer\Layer.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\loss\CrossEntropy.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\loss\Loss.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\loss\MeanSquaredError.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\math\Matrix.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\math\Vector.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\network\NeuralNetwork.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\training\Trainer.java
+C:\Users\dell\Documents\Codex\2026-10-06\hi\neural-networks-java\src\main\java\nn\training\TrainingExample.java

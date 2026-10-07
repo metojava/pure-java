@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 5: Backpropagation &amp; Gradient Descent - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 5: Backpropagation &amp; Gradient Descent | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 5</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter active" aria-current="page"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 5</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="toc.html" class="btn btn-secondary">Table of Contents</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 5</span>
+                    <h1>Backpropagation &amp; Gradient Descent</h1>
+                    <p class="chapter-subtitle">Measure how wrong the network is, trace the blame backward through every layer with the chain rule, and nudge each weight downhill.</p>
+                </header>
+
+                <section id="our-plan">
+                    <h2>What We Are Building</h2>
+                    <p>Chapter 4's network can make predictions, but its weights are random. Learning means adjusting those weights so predictions move toward known answers. That needs three ingredients:</p>
+                    <ol>
+                        <li>A <strong>loss</strong>: one number saying how wrong the predictions are. We implement mean squared error.</li>
+                        <li><strong>Gradients</strong>: for every weight and bias, the slope of the loss with respect to that parameter. <strong>Backpropagation</strong> computes all of them in one backward sweep.</li>
+                        <li><strong>Gradient descent</strong>: move each parameter a small step against its slope. <code>DenseLayer.applyGradients</code> from Chapter 4 already does this.</li>
+                    </ol>
+                    <p>New files: <code>com.neuralscratch.loss.OutputObjective</code>, <code>com.neuralscratch.loss.MeanSquaredError</code>, and <code>com.neuralscratch.training.Backpropagation</code>, plus a demo and a check program. We finish by confirming our hand-derived gradients against the numerical <code>Calculus.gradient</code> from Chapter 2.</p>
+                </section>
+
+                <section id="loss">
+                    <h2>1. Measuring Error: Mean Squared Error</h2>
+                    <p>For one prediction <code>a</code> and its target <code>y</code>, the error is <code>a − y</code>. Squaring makes it positive and punishes big misses more than small ones. We multiply by ½ so the derivative comes out clean, and we average over the batch so the loss does not grow just because the batch has more rows.</p>
+                    <div class="math-block">L = (1 / N) × Σ<sub>rows n</sub> Σ<sub>columns k</sub> ½ (a<sub>nk</sub> − y<sub>nk</sub>)²</div>
+                    <p>Here <code>N</code> is the number of rows (examples) in the batch. For outputs <code>[[1, 2], [3, 4]]</code> and targets <code>[[0, 2], [3, 2]]</code>, the differences are <code>1, 0, 0, 2</code>, the squares sum to 5, and <code>L = 0.5 × 5 / 2 = 1.25</code>.</p>
+                    <h3>Its derivative with respect to the output</h3>
+                    <p>Each entry appears in exactly one squared term. The derivative of <code>½(a − y)²</code> with respect to <code>a</code> is <code>(a − y)</code>—the ½ cancels the 2 from the power rule—and the average contributes <code>1/N</code>:</p>
+                    <div class="math-block">∂L / ∂a<sub>nk</sub> = (a<sub>nk</sub> − y<sub>nk</sub>) / N</div>
+                </section>
+
+                <section id="objective">
+                    <h2>2. The <code>OutputObjective</code> Contract</h2>
+                    <p>Backpropagation starts at the output layer with a quantity called <code>δ</code> ("delta"): the slope of the loss with respect to the output layer's <em>pre-activation</em> <code>z</code>. By the chain rule, <code>δ = ∂L/∂a ⊙ f′(z)</code>, where <code>⊙</code> is the Hadamard (entry-by-entry) product from Chapter 2.</p>
+                    <p>We let the loss object compute that starting delta instead of only <code>∂L/∂a</code>. Why? In Chapter 6, Softmax combined with cross-entropy has a starting delta of simply <code>a − y</code>, which is both simpler and more numerically stable than multiplying two separate pieces. Passing both the last layer's pre-activation (called <code>logits</code> here, the usual name for raw output scores) and its activation keeps that option open.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/loss/OutputObjective.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.loss;
+
+import com.neuralscratch.activation.Activation;
+import com.neuralscratch.math.Matrix;
+
+public interface OutputObjective {
+    // L: one number summarising error over the batch (batch x outputs matrices).
+    double loss(Matrix logits, Matrix output, Matrix targets);
+
+    // delta = dL/dz for the last layer, shape batch x outputs.
+    Matrix delta(Matrix logits, Matrix output, Matrix targets, Activation outputActivation);
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/loss/MeanSquaredError.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.loss;
+
+import com.neuralscratch.activation.Activation;
+import com.neuralscratch.math.Matrix;
+import java.util.Objects;
+
+public final class MeanSquaredError implements OutputObjective {
+    @Override
+    public double loss(Matrix logits, Matrix output, Matrix targets) {
+        requireSameShapes(logits, output, targets);
+        double sumSquares = 0.0;
+        for (int row = 0; row &lt; output.rows(); row++) {
+            for (int col = 0; col &lt; output.cols(); col++) {
+                double error = output.get(row, col) - targets.get(row, col);
+                sumSquares += error * error;
+            }
+        }
+        // L = 0.5 * sum (a - y)^2 / N, with N = batch rows.
+        return 0.5 * sumSquares / output.rows();
+    }
+
+    @Override
+    public Matrix delta(Matrix logits, Matrix output, Matrix targets,
+                        Activation outputActivation) {
+        requireSameShapes(logits, output, targets);
+        Objects.requireNonNull(outputActivation, "outputActivation");
+        // dL/da = (a - y) / N; chain rule: dL/dz = dL/da (*) f'(z).
+        return output.subtract(targets)
+            .scale(1.0 / output.rows())
+            .hadamard(logits.apply(outputActivation::derivative));
+    }
+
+    private static void requireSameShapes(Matrix logits, Matrix output, Matrix targets) {
+        Objects.requireNonNull(logits, "logits");
+        Objects.requireNonNull(output, "output");
+        Objects.requireNonNull(targets, "targets");
+        if (output.rows() != targets.rows() || output.cols() != targets.cols()
+                || logits.rows() != output.rows() || logits.cols() != output.cols()) {
+            throw new IllegalArgumentException(
+                "logits, output and targets must share a shape; got "
+                    + logits.rows() + "x" + logits.cols() + ", "
+                    + output.rows() + "x" + output.cols() + ", "
+                    + targets.rows() + "x" + targets.cols()
+            );
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="chain-rule">
+                    <h2>3. The Chain Rule on One Neuron, With Numbers</h2>
+                    <p>Before matrices, follow one weight by hand. A single Sigmoid neuron has weight <code>w = 0.5</code> and bias <code>b = −0.5</code>. The input is <code>x = 2</code> and the target is <code>y = 1</code>.</p>
+                    <h3>Forward pass</h3>
+                    <table>
+                        <thead><tr><th>Step</th><th>Formula</th><th>Value</th></tr></thead>
+                        <tbody>
+                            <tr><td>pre-activation</td><td><code>z = w·x + b</code></td><td>0.5 × 2 − 0.5 = 0.5</td></tr>
+                            <tr><td>activation</td><td><code>a = σ(z)</code></td><td>0.622459</td></tr>
+                            <tr><td>loss (N = 1)</td><td><code>L = ½(a − y)²</code></td><td>½ × 0.377541² ≈ 0.071268</td></tr>
+                        </tbody>
+                    </table>
+                    <h3>Backward pass</h3>
+                    <p>The weight affects the loss only through a chain: <code>w → z → a → L</code>. The chain rule says the overall rate of change is the product of the local rates along the chain:</p>
+                    <div class="math-block">∂L/∂w = ∂L/∂a × ∂a/∂z × ∂z/∂w</div>
+                    <table>
+                        <thead><tr><th>Local slope</th><th>Formula</th><th>Value</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>∂L/∂a</code></td><td><code>a − y</code></td><td>−0.377541</td></tr>
+                            <tr><td><code>∂a/∂z</code></td><td><code>σ(z)(1 − σ(z))</code></td><td>0.235004</td></tr>
+                            <tr><td><code>δ = ∂L/∂z</code></td><td>product of the two above</td><td>−0.088723</td></tr>
+                            <tr><td><code>∂z/∂w</code></td><td><code>x</code></td><td>2</td></tr>
+                            <tr><td><code>∂z/∂b</code></td><td><code>1</code></td><td>1</td></tr>
+                            <tr><td><code>∂L/∂w</code></td><td><code>δ × x</code></td><td>−0.177447</td></tr>
+                            <tr><td><code>∂L/∂b</code></td><td><code>δ × 1</code></td><td>−0.088723</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Both gradients are negative, meaning "increasing this parameter lowers the loss." That makes sense: the output 0.62 is below the target 1, and raising <code>w</code> or <code>b</code> raises <code>z</code> and therefore <code>a</code>. Notice how <code>δ</code> appears in both results. Computing it once and reusing it is the whole efficiency trick of backpropagation.</p>
+                </section>
+
+                <section id="gradient-descent">
+                    <h2>4. Gradient Descent: Walking Downhill</h2>
+                    <p>Picture the loss as a landscape whose coordinates are the parameters. The gradient points uphill—the direction of steepest increase. To reduce the loss, step the opposite way, scaled by a small positive number called the <strong>learning rate</strong> <code>η</code> (eta):</p>
+                    <div class="math-block">w ← w − η × ∂L/∂w &nbsp;&nbsp;&nbsp;&nbsp; b ← b − η × ∂L/∂b</div>
+                    <p>With <code>η = 1</code> in our example, <code>w</code> becomes <code>0.5 + 0.177 = 0.677</code> and <code>b</code> becomes <code>−0.5 + 0.089 = −0.411</code>. A rate that is too small learns slowly; one that is too large overshoots the valley and can make the loss grow. Chapter 7 explores choosing it and running many steps.</p>
+                </section>
+
+                <section id="layers">
+                    <h2>5. From One Neuron to Whole Layers</h2>
+                    <p>Now let every quantity be a matrix with one row per example. For layer <code>l</code>: input activations <code>A<sub>l−1</sub></code> (with <code>A₀ = X</code>, the batch), weights <code>W<sub>l</sub></code>, pre-activation <code>Z<sub>l</sub> = A<sub>l−1</sub>W<sub>l</sub> + b<sub>l</sub></code>, output <code>A<sub>l</sub> = f(Z<sub>l</sub>)</code>, and <code>δ<sub>l</sub> = ∂L/∂Z<sub>l</sub></code>, which has the same shape as <code>Z<sub>l</sub></code>.</p>
+                    <div class="callout callout-math">
+                        <div class="callout-title">The four backpropagation equations</div>
+                        <ol>
+                            <li>Output delta: <code>δ<sub>L</sub> = ∂L/∂A<sub>L</sub> ⊙ f′(Z<sub>L</sub>)</code> (computed by <code>OutputObjective.delta</code>).</li>
+                            <li>Hidden delta: <code>δ<sub>l</sub> = (δ<sub>l+1</sub> · W<sub>l+1</sub><sup>T</sup>) ⊙ f′(Z<sub>l</sub>)</code>.</li>
+                            <li>Weight gradient: <code>∂L/∂W<sub>l</sub> = A<sub>l−1</sub><sup>T</sup> · δ<sub>l</sub></code>.</li>
+                            <li>Bias gradient: <code>∂L/∂b<sub>l</sub></code> = column sums of <code>δ<sub>l</sub></code> (add up the rows).</li>
+                        </ol>
+                    </div>
+                    <h3>Where equation 3 comes from</h3>
+                    <p>Entry <code>Z[n][j] = Σ<sub>i</sub> A[n][i] · W[i][j] + b[j]</code>. Weight <code>W[i][j]</code> multiplies <code>A[n][i]</code> in that sum, so its local slope is <code>A[n][i]</code>, just like <code>∂z/∂w = x</code> for one neuron. The same weight is used by every example in the batch, so its total gradient adds up the contributions: <code>Σ<sub>n</sub> A[n][i] · δ[n][j]</code>. That sum over <code>n</code> is precisely entry <code>(i, j)</code> of <code>A<sup>T</sup> · δ</code>. The <code>1/N</code> average is already inside <code>δ</code>, so summing gives the batch average.</p>
+                    <h3>Where equation 4 comes from</h3>
+                    <p>Bias <code>b[j]</code> is added to <code>Z[n][j]</code> for every row <code>n</code> with slope 1, so its gradient is <code>Σ<sub>n</sub> δ[n][j]</code>: the sum down column <code>j</code>.</p>
+                    <h3>Where equation 2 comes from</h3>
+                    <p>Hidden activation <code>A[n][j]</code> feeds every neuron <code>k</code> of the next layer through weight <code>W<sub>next</sub>[j][k]</code>. Its share of the blame adds up over those paths: <code>∂L/∂A[n][j] = Σ<sub>k</sub> δ<sub>next</sub>[n][k] · W<sub>next</sub>[j][k]</code>. Summing over the <em>second</em> index of <code>W<sub>next</sub></code> is a multiplication by its transpose: <code>δ<sub>next</sub> · W<sub>next</sub><sup>T</sup></code>. Then one more chain-rule link through the hidden activation multiplies entry-wise by <code>f′(Z)</code>.</p>
+                    <h3>Shapes for a 2 × 3 × 1 network with a batch of 4</h3>
+                    <table>
+                        <thead><tr><th>Quantity</th><th>Computation</th><th>Shape</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>δ₂</code></td><td><code>(A₂ − Y)/4 ⊙ σ′(Z₂)</code></td><td>4 × 1</td></tr>
+                            <tr><td><code>∂L/∂W₂</code></td><td><code>A₁ᵀ (3 × 4) · δ₂ (4 × 1)</code></td><td>3 × 1 = shape of <code>W₂</code></td></tr>
+                            <tr><td><code>∂L/∂b₂</code></td><td>column sums of <code>δ₂</code></td><td>size 1</td></tr>
+                            <tr><td><code>δ₁</code></td><td><code>δ₂ (4 × 1) · W₂ᵀ (1 × 3) ⊙ σ′(Z₁) (4 × 3)</code></td><td>4 × 3</td></tr>
+                            <tr><td><code>∂L/∂W₁</code></td><td><code>Xᵀ (2 × 4) · δ₁ (4 × 3)</code></td><td>2 × 3 = shape of <code>W₁</code></td></tr>
+                            <tr><td><code>∂L/∂b₁</code></td><td>column sums of <code>δ₁</code></td><td>size 3</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Every gradient has exactly the shape of the parameter it updates. If your shapes do not line up, the formula is wrong; the <code>Matrix</code> class will tell you immediately.</p>
+                </section>
+
+                <section id="order">
+                    <h2>6. Compute All Gradients First, Then Update</h2>
+                    <p>Equation 2 uses <code>W<sub>l+1</sub></code>, the weights of the layer <em>after</em> the one whose delta we are computing. If we updated the last layer's weights immediately after computing its gradient, the next backward step would use the <em>new</em> weights, yet the loss we are differentiating was produced by the <em>old</em> ones. The resulting hidden gradients would be subtly wrong: training might still drift downhill, which makes this bug hard to spot by watching the loss.</p>
+                    <p>Our implementation therefore runs in three phases: a forward pass that caches every <code>Z</code> and <code>A</code>; a backward pass that stores every gradient in arrays; and only then an update loop calling <code>applyGradients</code>. The gradient check later in this chapter would catch the bug for networks with two or more layers.</p>
+                </section>
+
+                <section id="backprop-code">
+                    <h2>7. The <code>Backpropagation</code> Class</h2>
+                    <p><code>trainBatch</code> performs one gradient-descent step on one batch and returns the loss measured <em>before</em> the update. It validates everything up front, so invalid arguments never modify the network.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/training/Backpropagation.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.training;
+
+import com.neuralscratch.loss.OutputObjective;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.math.Vector;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+public final class Backpropagation {
+    private Backpropagation() {
+    }
+
+    public static double trainBatch(Network network, Matrix inputs, Matrix targets,
+                                    OutputObjective objective, double learningRate) {
+        Objects.requireNonNull(network, "network");
+        Objects.requireNonNull(inputs, "inputs");
+        Objects.requireNonNull(targets, "targets");
+        Objects.requireNonNull(objective, "objective");
+        if (!Double.isFinite(learningRate) || learningRate &lt;= 0.0) {
+            throw new IllegalArgumentException(
+                "Learning rate must be positive and finite, got " + learningRate
+            );
+        }
+        List&lt;DenseLayer&gt; layers = network.layers();
+        int layerCount = layers.size();
+        DenseLayer last = layers.get(layerCount - 1);
+        if (inputs.cols() != network.inputSize()) {
+            throw new IllegalArgumentException(
+                "Inputs need " + network.inputSize() + " columns, got " + inputs.cols()
+            );
+        }
+        if (targets.rows() != inputs.rows() || targets.cols() != last.outputSize()) {
+            throw new IllegalArgumentException(
+                "Targets must be " + inputs.rows() + "x" + last.outputSize()
+                    + ", got " + targets.rows() + "x" + targets.cols()
+            );
+        }
+
+        // Forward pass: cache Z_l and A_l; activations.get(0) is the input batch A_0 = X.
+        List&lt;Matrix&gt; preActivations = new ArrayList&lt;&gt;(layerCount);
+        List&lt;Matrix&gt; activations = new ArrayList&lt;&gt;(layerCount + 1);
+        activations.add(inputs);
+        Matrix current = inputs;
+        for (DenseLayer layer : layers) {
+            // Z_l = A_(l-1) W_l + b_l ; A_l = f(Z_l)
+            Matrix z = current.multiply(layer.weights()).addRowVector(layer.biases());
+            current = z.apply(layer.activation()::apply);
+            preActivations.add(z);
+            activations.add(current);
+        }
+        Matrix lastPreActivation = preActivations.get(layerCount - 1);
+        Matrix lastActivation = activations.get(layerCount);
+        double loss = objective.loss(lastPreActivation, lastActivation, targets);
+
+        // Backward pass: compute every gradient while all weights are still unchanged.
+        Matrix[] weightGradients = new Matrix[layerCount];
+        Vector[] biasGradients = new Vector[layerCount];
+        // delta_L = dL/dZ_L, supplied by the objective.
+        Matrix delta = objective.delta(lastPreActivation, lastActivation, targets,
+            last.activation());
+        for (int index = layerCount - 1; index &gt;= 0; index--) {
+            // dL/dW_l = A_(l-1)^T delta_l : (in x batch)(batch x out) = in x out
+            weightGradients[index] = activations.get(index).transpose().multiply(delta);
+            // dL/db_l = column sums of delta_l
+            biasGradients[index] = rowSum(delta);
+            if (index &gt; 0) {
+                DenseLayer hidden = layers.get(index - 1);
+                Matrix nextWeights = layers.get(index).weights();
+                // delta_(l-1) = (delta_l W_l^T) (*) f'(Z_(l-1))
+                delta = delta.multiply(nextWeights.transpose())
+                    .hadamard(preActivations.get(index - 1)
+                        .apply(hidden.activation()::derivative));
+            }
+        }
+
+        // Update phase: gradient descent on every layer.
+        for (int index = 0; index &lt; layerCount; index++) {
+            layers.get(index).applyGradients(
+                weightGradients[index], biasGradients[index], learningRate);
+        }
+        return loss;
+    }
+
+    public static Vector rowSum(Matrix matrix) {
+        Objects.requireNonNull(matrix, "matrix");
+        double[] sums = new double[matrix.cols()];
+        for (int row = 0; row &lt; matrix.rows(); row++) {
+            for (int col = 0; col &lt; matrix.cols(); col++) {
+                // Add every row together: one total per column.
+                sums[col] += matrix.get(row, col);
+            }
+        }
+        return new Vector(sums);
+    }
+}</code></pre>
+                    </div>
+                    <p>The name <code>rowSum</code> means "sum of the rows": the result has one entry per column, which is exactly the bias shape. For <code>[[1, 2], [3, 4]]</code> it returns <code>[4, 6]</code>.</p>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">Activations must have derivatives</div>
+                        <p>Training calls <code>derivative</code> on every layer's activation, so a <code>Step</code> layer throws <code>UnsupportedOperationException</code> here. That is deliberate: the hand-built XOR network from Chapter 4 can predict but not learn. Use <code>Sigmoid</code> or <code>Identity</code> for now; Chapter 6 adds ReLU and Softmax.</p>
+                    </div>
+                </section>
+
+                <section id="gradient-check">
+                    <h2>8. Trust, but Verify: Gradient Checking</h2>
+                    <p>Backpropagation code can contain bugs that still let the loss decrease a little. The reliable test is to compare its gradients with numerical estimates from Chapter 2's central difference:</p>
+                    <div class="math-block">∂L/∂θ ≈ [L(θ + h) − L(θ − h)] / (2h)</div>
+                    <p>The procedure:</p>
+                    <ol>
+                        <li><strong>Flatten</strong> every weight and bias of the network into one <code>Vector</code> of parameters <code>θ</code>. For 2 × 3 × 1 that is 13 numbers.</li>
+                        <li>Write a function that <strong>rebuilds</strong> a network from such a vector and returns its loss on a fixed batch. Pass it to <code>Calculus.gradient</code>.</li>
+                        <li>Get the <strong>analytic</strong> gradient from <code>trainBatch</code>: run it on a fresh copy with learning rate 1. Since <code>θ<sub>new</sub> = θ − 1 × gradient</code>, the gradient equals <code>θ − θ<sub>new</sub></code>.</li>
+                        <li>Compare. With <code>h = 10⁻⁵</code> and smooth activations, the two typically agree to around <code>10⁻⁹</code>; we accept differences below <code>10⁻⁷</code>.</li>
+                    </ol>
+                    <p>Recovering the gradient from an update costs only one floating-point rounding error per parameter and keeps the <code>Backpropagation</code> API exactly as specified. Remember that finite differences need two loss evaluations per parameter, so they are for checking, never for training.</p>
+                </section>
+
+                <section id="demo">
+                    <h2>9. A Runnable Demo</h2>
+                    <p>The demo has three parts: it reproduces the hand-computed chain-rule example, runs a gradient check on a seeded 2 × 3 × 1 network, and gives a short preview of repeated training steps on OR. Proper training loops with epochs, shuffling, and mini-batches arrive in Chapter 7.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/examples/Chapter5Demo.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.examples;
+
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.loss.MeanSquaredError;
+import com.neuralscratch.loss.OutputObjective;
+import com.neuralscratch.math.Calculus;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.math.Vector;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import com.neuralscratch.training.Backpropagation;
+import java.util.Locale;
+import java.util.Random;
+
+public final class Chapter5Demo {
+    private static final int[] SIZES = {2, 3, 1};
+
+    private Chapter5Demo() {
+    }
+
+    public static void main(String[] args) {
+        OutputObjective mse = new MeanSquaredError();
+
+        DenseLayer single = new DenseLayer(
+            Matrix.of(new double[][] {{0.5}}), new Vector(new double[] {-0.5}), new Sigmoid());
+        Network neuron = new Network(single);
+        double weightBefore = single.weights().get(0, 0);
+        double biasBefore = single.biases().get(0);
+        double singleLoss = Backpropagation.trainBatch(neuron,
+            Matrix.of(new double[][] {{2}}), Matrix.of(new double[][] {{1}}), mse, 1.0);
+        System.out.printf(Locale.ROOT,
+            "Chain rule example: loss = %.6f, dL/dw = %.6f, dL/db = %.6f%n",
+            singleLoss,
+            weightBefore - single.weights().get(0, 0),
+            biasBefore - single.biases().get(0));
+        System.out.printf(Locale.ROOT, "  after one step (rate 1): w = %.6f, b = %.6f%n",
+            single.weights().get(0, 0), single.biases().get(0));
+
+        Matrix inputs = Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}});
+        Matrix targets = Matrix.of(new double[][] {{0}, {1}, {1}, {1}});
+
+        Vector parameters = flatten(randomNetwork(new Random(3)));
+        Network copy = build(parameters);
+        Backpropagation.trainBatch(copy, inputs, targets, mse, 1.0);
+        // With rate 1: theta_new = theta - gradient, so gradient = theta - theta_new.
+        Vector analytic = parameters.subtract(flatten(copy));
+        Vector numeric = Calculus.gradient(
+            theta -&gt; loss(build(theta), inputs, targets, mse), parameters);
+        double maxDifference = 0.0;
+        System.out.println("Gradient check on a 2x3x1 network (seed 3):");
+        for (int index = 0; index &lt; parameters.size(); index++) {
+            double difference = Math.abs(analytic.get(index) - numeric.get(index));
+            maxDifference = Math.max(maxDifference, difference);
+            System.out.printf(Locale.ROOT, "  parameter %2d  backprop %12.8f  numeric %12.8f%n",
+                index, analytic.get(index), numeric.get(index));
+        }
+        System.out.printf(Locale.ROOT, "  max |difference| = %.2e -&gt; %s%n",
+            maxDifference, maxDifference &lt; 1e-7 ? "PASS" : "FAIL");
+
+        Network learner = randomNetwork(new Random(7));
+        System.out.println("Preview: 2000 full-batch steps on OR, learning rate 2.0");
+        for (int step = 1; step &lt;= 2000; step++) {
+            double stepLoss = Backpropagation.trainBatch(learner, inputs, targets, mse, 2.0);
+            if (step == 1 || step % 500 == 0) {
+                System.out.printf(Locale.ROOT, "  step %4d  loss %.6f%n", step, stepLoss);
+            }
+        }
+        Matrix predictions = learner.predict(inputs);
+        for (int row = 0; row &lt; inputs.rows(); row++) {
+            System.out.printf(Locale.ROOT, "  [%.0f, %.0f] -&gt; %.4f (target %.0f)%n",
+                inputs.get(row, 0), inputs.get(row, 1),
+                predictions.get(row, 0), targets.get(row, 0));
+        }
+    }
+
+    private static Network randomNetwork(Random random) {
+        DenseLayer[] layers = new DenseLayer[SIZES.length - 1];
+        for (int index = 0; index &lt; layers.length; index++) {
+            layers[index] = DenseLayer.random(SIZES[index], SIZES[index + 1],
+                new Sigmoid(), random);
+        }
+        return new Network(layers);
+    }
+
+    private static Vector flatten(Network network) {
+        int count = 0;
+        for (DenseLayer layer : network.layers()) {
+            count += layer.inputSize() * layer.outputSize() + layer.outputSize();
+        }
+        double[] theta = new double[count];
+        int offset = 0;
+        for (DenseLayer layer : network.layers()) {
+            for (int row = 0; row &lt; layer.inputSize(); row++) {
+                for (int col = 0; col &lt; layer.outputSize(); col++) {
+                    theta[offset++] = layer.weights().get(row, col);
+                }
+            }
+            for (int col = 0; col &lt; layer.outputSize(); col++) {
+                theta[offset++] = layer.biases().get(col);
+            }
+        }
+        return new Vector(theta);
+    }
+
+    private static Network build(Vector theta) {
+        DenseLayer[] layers = new DenseLayer[SIZES.length - 1];
+        int offset = 0;
+        for (int index = 0; index &lt; layers.length; index++) {
+            int in = SIZES[index];
+            int out = SIZES[index + 1];
+            double[][] weights = new double[in][out];
+            for (int row = 0; row &lt; in; row++) {
+                for (int col = 0; col &lt; out; col++) {
+                    weights[row][col] = theta.get(offset++);
+                }
+            }
+            double[] biases = new double[out];
+            for (int col = 0; col &lt; out; col++) {
+                biases[col] = theta.get(offset++);
+            }
+            layers[index] = new DenseLayer(Matrix.of(weights), new Vector(biases), new Sigmoid());
+        }
+        return new Network(layers);
+    }
+
+    private static double loss(Network network, Matrix inputs, Matrix targets,
+                               OutputObjective objective) {
+        Matrix activation = inputs;
+        Matrix z = null;
+        for (DenseLayer layer : network.layers()) {
+            z = activation.multiply(layer.weights()).addRowVector(layer.biases());
+            activation = z.apply(layer.activation()::apply);
+        }
+        return objective.loss(z, activation, targets);
+    }
+}</code></pre>
+                    </div>
+                    <p>Expected output:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Output</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-text">Chain rule example: loss = 0.071268, dL/dw = -0.177447, dL/db = -0.088723
+  after one step (rate 1): w = 0.677447, b = -0.411277
+Gradient check on a 2x3x1 network (seed 3):
+  parameter  0  backprop   0.01514703  numeric   0.01514703
+  parameter  1  backprop   0.02400653  numeric   0.02400653
+  parameter  2  backprop   0.00472620  numeric   0.00472620
+  parameter  3  backprop   0.01424935  numeric   0.01424935
+  parameter  4  backprop   0.02319978  numeric   0.02319978
+  parameter  5  backprop   0.00467232  numeric   0.00467232
+  parameter  6  backprop   0.02034212  numeric   0.02034212
+  parameter  7  backprop   0.03250912  numeric   0.03250912
+  parameter  8  backprop   0.00665966  numeric   0.00665966
+  parameter  9  backprop  -0.05213959  numeric  -0.05213959
+  parameter 10  backprop  -0.04209927  numeric  -0.04209927
+  parameter 11  backprop  -0.02479453  numeric  -0.02479453
+  parameter 12  backprop  -0.08787631  numeric  -0.08787631
+  max |difference| = 2.59e-12 -&gt; PASS
+Preview: 2000 full-batch steps on OR, learning rate 2.0
+  step    1  loss 0.095636
+  step  500  loss 0.002500
+  step 1000  loss 0.000833
+  step 1500  loss 0.000474
+  step 2000  loss 0.000325
+  [0, 0] -&gt; 0.0405 (target 0)
+  [0, 1] -&gt; 0.9780 (target 1)
+  [1, 0] -&gt; 0.9783 (target 1)
+  [1, 1] -&gt; 0.9976 (target 1)</code></pre>
+                    </div>
+                    <p>The first line matches the hand calculation in Section 3. Every analytic gradient agrees with its numerical estimate, and repeated steps drive the OR loss toward zero. The exact digits in the last decimal place of the numeric column may differ slightly between JVMs because <code>Math.exp</code> is allowed tiny platform differences; the PASS verdict should not change.</p>
+                </section>
+
+                <section id="testing">
+                    <h2>10. Checks Without a Test Framework</h2>
+                    <p>The checks verify the loss and delta formulas on small matrices, the chain-rule example, gradient checks on a two-layer and a three-layer network (either one exposes the update-order bug from Section 6), that the returned loss is the pre-update loss, that a small step lowers the loss, and that invalid arguments leave the network untouched.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/test/java/com/neuralscratch/training/BackpropagationChecks.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.training;
+
+import com.neuralscratch.activation.Identity;
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.loss.MeanSquaredError;
+import com.neuralscratch.loss.OutputObjective;
+import com.neuralscratch.math.Calculus;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.math.Vector;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import java.util.Random;
+
+public final class BackpropagationChecks {
+    private static final double TOLERANCE = 1e-9;
+
+    private BackpropagationChecks() {
+    }
+
+    public static void main(String[] args) {
+        OutputObjective mse = new MeanSquaredError();
+        Matrix output = Matrix.of(new double[][] {{1, 2}, {3, 4}});
+        Matrix target = Matrix.of(new double[][] {{0, 2}, {3, 2}});
+        close(1.25, mse.loss(output, output, target));
+        matrixClose(new double[][] {{0.5, 0}, {0, 1}},
+            mse.delta(output, output, target, new Identity()));
+        Sigmoid sigmoid = new Sigmoid();
+        Matrix logits = Matrix.of(new double[][] {{0.3, -1.2}});
+        Matrix squashed = logits.apply(sigmoid::apply);
+        Matrix goal = Matrix.of(new double[][] {{1, 0}});
+        matrixClose(new double[][] {{
+            (squashed.get(0, 0) - 1) * sigmoid.derivative(0.3),
+            (squashed.get(0, 1) - 0) * sigmoid.derivative(-1.2)
+        }}, mse.delta(logits, squashed, goal, sigmoid));
+        expectIllegalArgument(() -&gt; mse.loss(output, output, Matrix.of(new double[][] {{1, 2}})));
+
+        Vector sums = Backpropagation.rowSum(output);
+        close(4, sums.get(0));
+        close(6, sums.get(1));
+
+        DenseLayer single = new DenseLayer(
+            Matrix.of(new double[][] {{0.5}}), new Vector(new double[] {-0.5}), sigmoid);
+        double loss = Backpropagation.trainBatch(new Network(single),
+            Matrix.of(new double[][] {{2}}), Matrix.of(new double[][] {{1}}), mse, 1.0);
+        double a = sigmoid.apply(0.5);
+        double delta = (a - 1) * a * (1 - a);
+        close(0.5 * (a - 1) * (a - 1), loss);
+        close(0.5 - 2 * delta, single.weights().get(0, 0));
+        close(-0.5 - delta, single.biases().get(0));
+
+        Random random = new Random(11);
+        gradientCheck(new int[] {2, 3, 1}, randomMatrix(4, 2, random), randomMatrix(4, 1, random), random);
+        gradientCheck(new int[] {3, 4, 3, 2}, randomMatrix(5, 3, random), randomMatrix(5, 2, random), random);
+
+        Matrix inputs = Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}});
+        Matrix targets = Matrix.of(new double[][] {{0}, {1}, {1}, {1}});
+        int[] sizes = {2, 3, 1};
+        Network network = randomNetwork(sizes, new Random(5));
+        double before = forwardLoss(network, inputs, targets, mse);
+        double reported = Backpropagation.trainBatch(network, inputs, targets, mse, 0.5);
+        close(before, reported);
+        double after = forwardLoss(network, inputs, targets, mse);
+        if (!(after &lt; before)) {
+            throw new AssertionError("A small step should lower the loss: " + before + " -&gt; " + after);
+        }
+
+        Vector frozen = flatten(network);
+        expectIllegalArgument(() -&gt; Backpropagation.trainBatch(
+            network, Matrix.of(new double[][] {{1, 2, 3}}), Matrix.of(new double[][] {{1}}), mse, 0.1));
+        expectIllegalArgument(() -&gt; Backpropagation.trainBatch(
+            network, inputs, Matrix.of(new double[][] {{1}, {0}}), mse, 0.1));
+        expectIllegalArgument(() -&gt; Backpropagation.trainBatch(
+            network, inputs, Matrix.of(new double[][] {{1, 0}, {1, 0}, {1, 0}, {1, 0}}), mse, 0.1));
+        expectIllegalArgument(() -&gt; Backpropagation.trainBatch(network, inputs, targets, mse, 0.0));
+        expectIllegalArgument(() -&gt; Backpropagation.trainBatch(network, inputs, targets, mse, Double.NaN));
+        vectorClose(frozen, flatten(network));
+        System.out.println("All backpropagation checks passed");
+    }
+
+    private static void gradientCheck(int[] sizes, Matrix inputs, Matrix targets, Random random) {
+        OutputObjective mse = new MeanSquaredError();
+        Vector theta = flatten(randomNetwork(sizes, random));
+        Network copy = build(sizes, theta);
+        Backpropagation.trainBatch(copy, inputs, targets, mse, 1.0);
+        Vector analytic = theta.subtract(flatten(copy));
+        Vector numeric = Calculus.gradient(
+            point -&gt; forwardLoss(build(sizes, point), inputs, targets, mse), theta);
+        for (int index = 0; index &lt; theta.size(); index++) {
+            if (Math.abs(analytic.get(index) - numeric.get(index)) &gt; 1e-7) {
+                throw new AssertionError("Gradient mismatch at parameter " + index + ": "
+                    + analytic.get(index) + " vs " + numeric.get(index));
+            }
+        }
+    }
+
+    private static Matrix randomMatrix(int rows, int cols, Random random) {
+        double[][] values = new double[rows][cols];
+        for (int row = 0; row &lt; rows; row++) {
+            for (int col = 0; col &lt; cols; col++) {
+                values[row][col] = random.nextDouble();
+            }
+        }
+        return Matrix.of(values);
+    }
+
+    private static Network randomNetwork(int[] sizes, Random random) {
+        DenseLayer[] layers = new DenseLayer[sizes.length - 1];
+        for (int index = 0; index &lt; layers.length; index++) {
+            layers[index] = DenseLayer.random(sizes[index], sizes[index + 1], new Sigmoid(), random);
+        }
+        return new Network(layers);
+    }
+
+    private static Vector flatten(Network network) {
+        int count = 0;
+        for (DenseLayer layer : network.layers()) {
+            count += layer.inputSize() * layer.outputSize() + layer.outputSize();
+        }
+        double[] theta = new double[count];
+        int offset = 0;
+        for (DenseLayer layer : network.layers()) {
+            for (int row = 0; row &lt; layer.inputSize(); row++) {
+                for (int col = 0; col &lt; layer.outputSize(); col++) {
+                    theta[offset++] = layer.weights().get(row, col);
+                }
+            }
+            for (int col = 0; col &lt; layer.outputSize(); col++) {
+                theta[offset++] = layer.biases().get(col);
+            }
+        }
+        return new Vector(theta);
+    }
+
+    private static Network build(int[] sizes, Vector theta) {
+        DenseLayer[] layers = new DenseLayer[sizes.length - 1];
+        int offset = 0;
+        for (int index = 0; index &lt; layers.length; index++) {
+            double[][] weights = new double[sizes[index]][sizes[index + 1]];
+            for (int row = 0; row &lt; sizes[index]; row++) {
+                for (int col = 0; col &lt; sizes[index + 1]; col++) {
+                    weights[row][col] = theta.get(offset++);
+                }
+            }
+            double[] biases = new double[sizes[index + 1]];
+            for (int col = 0; col &lt; biases.length; col++) {
+                biases[col] = theta.get(offset++);
+            }
+            layers[index] = new DenseLayer(Matrix.of(weights), new Vector(biases), new Sigmoid());
+        }
+        return new Network(layers);
+    }
+
+    private static double forwardLoss(Network network, Matrix inputs, Matrix targets,
+                                      OutputObjective objective) {
+        Matrix activation = inputs;
+        Matrix z = null;
+        for (DenseLayer layer : network.layers()) {
+            z = activation.multiply(layer.weights()).addRowVector(layer.biases());
+            activation = z.apply(layer.activation()::apply);
+        }
+        return objective.loss(z, activation, targets);
+    }
+
+    private static void close(double expected, double actual) {
+        if (!Double.isFinite(actual) || Math.abs(expected - actual) &gt; TOLERANCE) {
+            throw new AssertionError("Expected " + expected + ", got " + actual);
+        }
+    }
+
+    private static void vectorClose(Vector expected, Vector actual) {
+        if (expected.size() != actual.size()) {
+            throw new AssertionError("Vector size mismatch");
+        }
+        for (int index = 0; index &lt; expected.size(); index++) {
+            close(expected.get(index), actual.get(index));
+        }
+    }
+
+    private static void matrixClose(double[][] expected, Matrix actual) {
+        if (expected.length != actual.rows() || expected[0].length != actual.cols()) {
+            throw new AssertionError("Matrix shape mismatch");
+        }
+        for (int row = 0; row &lt; actual.rows(); row++) {
+            for (int col = 0; col &lt; actual.cols(); col++) {
+                close(expected[row][col], actual.get(row, col));
+            }
+        }
+    }
+
+    private static void expectIllegalArgument(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // Validation happens before any parameter changes.
+        }
+    }
+}</code></pre>
+                    </div>
+                    <p>Regenerate <code>sources.txt</code> (Chapter 3 shows the commands), then compile and run:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Terminal (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">javac -d out @sources.txt
+java -cp out com.neuralscratch.examples.Chapter5Demo
+java -cp out com.neuralscratch.training.BackpropagationChecks</code></pre>
+                    </div>
+                    <p>Expected final line: <code>All backpropagation checks passed</code>. As an experiment, move the update loop inside the backward loop (update each layer right after computing its gradient) and rerun the checks: the gradient check reports a mismatch.</p>
+                </section>
+
+                <section id="recap">
+                    <h2>What You Now Have</h2>
+                    <ul>
+                        <li><code>OutputObjective</code> and <code>MeanSquaredError</code>: a batch-averaged loss and the starting delta <code>(A − Y)/N ⊙ f′(Z)</code>.</li>
+                        <li><code>Backpropagation.trainBatch</code>: cached forward pass, the four backpropagation equations, all gradients computed before any update, and a pre-update loss.</li>
+                        <li>A gradient check tying the analytic derivatives back to Chapter 2's numerical <code>Calculus.gradient</code>.</li>
+                    </ul>
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Before Chapter 6</div>
+                        <p>Change the preview to learn XOR instead of OR. Depending on the seed and learning rate, it may learn quickly, slowly, or get stuck with Sigmoid's small slopes. Chapter 6 explains why and introduces ReLU, Softmax, and cross-entropy; Chapter 7 wraps <code>trainBatch</code> in a full training loop.</p>
+                    </div>
+                </section>
+
+                <nav class="chapter-nav" aria-label="Chapter navigation">
+                    <a href="chapter4.html" class="btn btn-secondary">← Previous: Chapter 4</a>
+                    <a href="chapter6.html" class="btn btn-primary">Next: Chapter 6 →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 5</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Pure Java SE • No machine-learning dependencies • Built for understanding</p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

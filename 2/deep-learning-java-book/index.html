@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Neural Networks from Scratch in Pure Java: an eight-chapter guide to building and testing neural networks with Java 17 and no machine-learning libraries.">
+    <title>Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Eight chapters · Java 17+ · No machine-learning libraries</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapters/chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapters/chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapters/chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapters/chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapters/chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapters/chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapters/chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapters/chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb"><span>Home</span></nav>
+            </div>
+            <div class="header-right">
+                <a href="chapters/toc.html" class="btn btn-secondary">Table of Contents</a>
+                <a href="chapters/chapter1.html" class="btn btn-primary">Start Reading</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <section class="book-hero" style="text-align: center; padding: 3rem 0; margin-bottom: 2rem;">
+                <div style="display: inline-block; padding: 2rem 3rem; background: linear-gradient(135deg, var(--primary), var(--secondary)); border-radius: 16px; color: white; box-shadow: 0 20px 40px rgba(44, 62, 80, 0.3);">
+                    <h1 style="font-size: 3rem; margin-bottom: 0.5rem; color: white; font-weight: 700;">Neural Networks from Scratch in Pure Java</h1>
+                    <p style="font-size: 1.2rem; opacity: 0.9;">An eight-chapter, step-by-step guide to the mathematics and code behind learning.</p>
+                </div>
+            </section>
+
+            <section class="book-description" style="max-width: 800px; margin: 0 auto 3rem; padding: 2rem; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                <h2 style="margin-top: 0;">About This Book</h2>
+                <p>Build a neural network one understandable Java method at a time: vectors, matrices, neurons, layers, backpropagation, training, and evaluation. Every implementation uses Java 17 Standard Edition; you do not need a machine-learning or linear-algebra library.</p>
+                <p>Written for Java developers who know loops, arrays, classes, and methods but are new to AI or calculus. The chapters explain each idea with small numbers before turning it into readable, testable code.</p>
+                <ul>
+                    <li><strong>Start small:</strong> compute a dot product and inspect every index in matrix multiplication.</li>
+                    <li><strong>Learn the mechanics:</strong> derive gradients and compare them with finite differences.</li>
+                    <li><strong>Make it work:</strong> train on logic gates, then classify handwritten digits from raw MNIST IDX files.</li>
+                    <li><strong>Run the examples:</strong> copy complete Java source listings and compile them with a Java 17+ JDK.</li>
+                </ul>
+            </section>
+
+            <section class="parts-overview">
+                <h2 style="text-align: center; margin-bottom: 2rem;">The Four Parts</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    <article style="background: white; border-radius: 12px; padding: 2rem; border-top: 4px solid var(--accent); box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h3 style="margin-top: 0;">Part I: Foundations</h3>
+                        <p>Understand what a network computes and implement <code>Vector</code>, <code>Matrix</code>, and numerical derivatives without a math library.</p>
+                        <ul>
+                            <li><a href="chapters/chapter1.html">Chapter 1: Introduction &amp; Why Pure Java?</a></li>
+                            <li><a href="chapters/chapter2.html">Chapter 2: Linear Algebra &amp; Calculus</a></li>
+                        </ul>
+                    </article>
+                    <article style="background: white; border-radius: 12px; padding: 2rem; border-top: 4px solid #27ae60; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h3 style="margin-top: 0;">Part II: The Neuron</h3>
+                        <p>Turn weighted inputs into a prediction, then stack neurons into dense layers with a shape-checked forward pass.</p>
+                        <ul>
+                            <li><a href="chapters/chapter3.html">Chapter 3: The Architecture of a Neuron</a></li>
+                            <li><a href="chapters/chapter4.html">Chapter 4: Building the Network Layers</a></li>
+                        </ul>
+                    </article>
+                    <article style="background: white; border-radius: 12px; padding: 2rem; border-top: 4px solid #e74c3c; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h3 style="margin-top: 0;">Part III: Learning</h3>
+                        <p>Derive backpropagation and gradient descent; add stable activations and a classification objective.</p>
+                        <ul>
+                            <li><a href="chapters/chapter5.html">Chapter 5: Backpropagation &amp; Gradient Descent</a></li>
+                            <li><a href="chapters/chapter6.html">Chapter 6: Activation &amp; Loss Functions</a></li>
+                        </ul>
+                    </article>
+                    <article style="background: white; border-radius: 12px; padding: 2rem; border-top: 4px solid #16a085; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                        <h3 style="margin-top: 0;">Part IV: Application</h3>
+                        <p>Write a shuffled mini-batch trainer, solve XOR, and evaluate a handwritten-digit classifier using held-out data.</p>
+                        <ul>
+                            <li><a href="chapters/chapter7.html">Chapter 7: Training the Network</a></li>
+                            <li><a href="chapters/chapter8.html">Chapter 8: Evaluation &amp; Testing</a></li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+
+            <section style="text-align: center; padding: 3rem 0;">
+                <a href="chapters/toc.html" class="btn btn-primary" style="font-size: 1.1rem; padding: 1rem 2rem;">Explore the Full Table of Contents →</a>
+            </section>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Java 17+ • Standard Edition only • No machine-learning dependencies</p>
+        </footer>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

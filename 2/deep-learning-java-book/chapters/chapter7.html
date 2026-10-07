@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 7: Training the Network - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 7: Training the Network | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 7</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter active" aria-current="page"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 7</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="toc.html" class="btn btn-secondary">Table of Contents</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 7</span>
+                    <h1>Training the Network</h1>
+                    <p class="chapter-subtitle">Turn one backpropagation step into a repeatable, shuffled, monitored training loop.</p>
+                </header>
+
+                <section id="our-plan">
+                    <h2>What We Are Building</h2>
+                    <p><code>Backpropagation.trainBatch</code> performs exactly one weight update from one batch. A real model needs thousands of them, over data visited in a fresh random order, with a running record of whether the loss is improving. This chapter builds that outer loop from three small parts:</p>
+                    <table>
+                        <thead><tr><th>File</th><th>Role</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>training/Dataset.java</code></td><td>A record pairing an input matrix with a target matrix, validated to describe the same samples.</td></tr>
+                            <tr><td><code>training/Trainer.java</code></td><td>Shuffles, slices batches, calls <code>trainBatch</code>, and returns one average loss per epoch.</td></tr>
+                            <tr><td><code>demo/AndGateDemo.java</code></td><td>A small runnable demonstration on the logical AND gate.</td></tr>
+                            <tr><td><code>training/TrainerChecks.java</code></td><td>A dependency-free check of batching, shuffling, validation and a falling loss.</td></tr>
+                        </tbody>
+                    </table>
+                    <p>XOR is deliberately absent. It needs a hidden layer, and Chapter 8 is dedicated to it. Here we use AND, which a single neuron can learn.</p>
+                </section>
+
+                <section id="vocabulary">
+                    <h2>1. Epochs, Batches, and Iterations</h2>
+                    <p>Three words describe a training run, and they are easy to confuse:</p>
+                    <ul>
+                        <li>A <strong>sample</strong> is one row of the dataset: one input vector and its target.</li>
+                        <li>A <strong>batch</strong> is a small group of samples processed in one call to <code>trainBatch</code>, which averages their gradients and makes <em>one</em> weight update.</li>
+                        <li>An <strong>epoch</strong> is one full pass in which every sample appears exactly once.</li>
+                    </ul>
+                    <p>With <code>N</code> samples and batch size <code>S</code>, an epoch contains <code>⌈N / S⌉</code> batches, so that many weight updates (also called iterations). The final batch is smaller when <code>S</code> does not divide <code>N</code>:</p>
+                    <table>
+                        <thead><tr><th>Samples N</th><th>Batch size S</th><th>Batch sizes in one epoch</th><th>Updates per epoch</th></tr></thead>
+                        <tbody>
+                            <tr><td>4</td><td>2</td><td>2, 2</td><td>2</td></tr>
+                            <tr><td>4</td><td>3</td><td>3, 1</td><td>2</td></tr>
+                            <tr><td>4</td><td>4</td><td>4</td><td>1 (full-batch)</td></tr>
+                            <tr><td>6000</td><td>32</td><td>187 batches of 32, then 16</td><td>188</td></tr>
+                        </tbody>
+                    </table>
+                    <p>Batch size trades noise against cost. A batch of 1 makes a noisy update from a single example; the whole dataset makes the smoothest update but only one per epoch. Medium batches such as 16 to 128 are a common compromise. Because the objectives from Chapters 5 and 6 divide by the number of rows in the batch, the gradient has the same scale whatever batch size you choose.</p>
+                </section>
+
+                <section id="dataset">
+                    <h2>2. The Dataset Record</h2>
+                    <p>A Java <code>record</code> is a compact immutable value type. Our <code>Dataset</code> holds <code>inputs</code> (one row per sample) and <code>targets</code> (one row per sample), and its compact constructor rejects mismatched row counts at the moment of creation. A bad dataset therefore cannot travel into the training loop. <code>Matrix</code> itself already forbids zero rows, and the explicit check keeps the rule visible in this class.</p>
+                    <p>The method <code>select</code> copies a slice of an index array into fresh matrices through <code>Matrix.of</code>. It is how the trainer builds a batch, and it also lets you split data into training and holdout parts later. The slice <code>[from, to)</code> may be shorter than the batch size, which is exactly what the final partial batch needs.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/training/Dataset.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.training;
+
+import com.neuralscratch.math.Matrix;
+import java.util.Objects;
+
+public record Dataset(Matrix inputs, Matrix targets) {
+    public Dataset {
+        Objects.requireNonNull(inputs, "inputs");
+        Objects.requireNonNull(targets, "targets");
+        if (inputs.rows() &lt;= 0 || inputs.rows() != targets.rows()) {
+            throw new IllegalArgumentException(
+                "Inputs and targets need the same positive row count, got "
+                    + inputs.rows() + " and " + targets.rows()
+            );
+        }
+    }
+
+    public int size() {
+        return inputs.rows();
+    }
+
+    public Dataset select(int[] order, int from, int to) {
+        Objects.requireNonNull(order, "order");
+        if (from &lt; 0 || from &gt;= to || to &gt; order.length) {
+            throw new IllegalArgumentException(
+                "Invalid slice [" + from + ", " + to + ") of " + order.length + " indices"
+            );
+        }
+        int count = to - from;
+        double[][] selectedInputs = new double[count][inputs.cols()];
+        double[][] selectedTargets = new double[count][targets.cols()];
+        for (int position = 0; position &lt; count; position++) {
+            int source = order[from + position];
+            if (source &lt; 0 || source &gt;= size()) {
+                throw new IllegalArgumentException("Sample index out of range: " + source);
+            }
+            for (int col = 0; col &lt; inputs.cols(); col++) {
+                selectedInputs[position][col] = inputs.get(source, col);
+            }
+            for (int col = 0; col &lt; targets.cols(); col++) {
+                selectedTargets[position][col] = targets.get(source, col);
+            }
+        }
+        return new Dataset(Matrix.of(selectedInputs), Matrix.of(selectedTargets));
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="shuffling">
+                    <h2>3. Shuffling with Fisher-Yates</h2>
+                    <p>If every epoch visits samples in the same order, the model can pick up spurious patterns from that order (for example, all examples of one class arriving last). We reshuffle an array of <em>indices</em> at the start of every epoch and leave the data matrices untouched.</p>
+                    <p>The <strong>Fisher-Yates shuffle</strong> walks from the last position down to position 1. At position <code>last</code> it picks a random slot among <code>0…last</code> (inclusive), swaps it into <code>last</code>, and never touches <code>last</code> again. Every permutation is equally likely, assuming a fair random source, because there are <code>n × (n−1) × … × 1 = n!</code> equally likely sequences of choices and each yields a different permutation. A common mistake, swapping every position with a random slot from the <em>whole</em> array, produces <code>nⁿ</code> outcomes that cannot be divided evenly among the <code>n!</code> permutations, so some orders become more likely than others.</p>
+                    <p>We pass in a <code>java.util.Random</code>. Constructing it with a seed such as <code>new Random(42)</code> makes the sequence of shuffles reproducible for debugging; a different seed changes the order and the random initial weights. Seeds are for repeatability, not for security.</p>
+                </section>
+
+                <section id="trainer">
+                    <h2>4. The Trainer</h2>
+                    <p>Read <code>train</code> from top to bottom. It validates every argument and checks that the network's first layer accepts the dataset's columns and its last layer produces as many outputs as there are target columns. Then, for each epoch, it shuffles the indices, steps through them in slices, builds a batch with <code>Dataset.select</code>, and calls <code>Backpropagation.trainBatch</code>. That method returns the batch loss <em>measured before its weight update</em>.</p>
+                    <h3>Why the epoch loss is weighted by batch size</h3>
+                    <p>Each loss returned by <code>trainBatch</code> is already an average over the rows in that batch. If you averaged those averages directly, a tiny final batch would count as much as a full one. Suppose batches of 3 and 1 samples report losses 0.4 and 0.8. The true per-sample mean is <code>(3 × 0.4 + 1 × 0.8) / 4 = 0.5</code>, but a naive mean of the two numbers gives 0.6. We multiply each batch loss by its actual size, sum, and divide by the total number of samples.</p>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">What the reported number is, and is not</div>
+                        <p>Each batch is scored <em>before</em> its own update, but earlier batches in the same epoch have already changed the weights. The epoch value is therefore a running training signal. It is not a final evaluation of the weights you end with, and it says nothing about unseen data.</p>
+                    </div>
+                    <p>Trainer deliberately prints nothing, so tests and applications can decide how to report. It throws <code>IllegalStateException</code> if a loss becomes <code>NaN</code> or infinite, because continuing would only fill the weights with garbage; the message suggests lowering the learning rate. The helper methods <code>shuffledIndices</code> and <code>batchCount</code> are public so that the checks can test them directly.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/training/Trainer.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.training;
+
+import com.neuralscratch.loss.OutputObjective;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+
+public final class Trainer {
+    private Trainer() {
+    }
+
+    public static double[] train(
+        Network network,
+        Dataset dataset,
+        OutputObjective objective,
+        int epochs,
+        int batchSize,
+        double learningRate,
+        Random random
+    ) {
+        Objects.requireNonNull(network, "network");
+        Objects.requireNonNull(dataset, "dataset");
+        Objects.requireNonNull(objective, "objective");
+        Objects.requireNonNull(random, "random");
+        if (epochs &lt;= 0) {
+            throw new IllegalArgumentException("epochs must be positive");
+        }
+        if (batchSize &lt;= 0) {
+            throw new IllegalArgumentException("batchSize must be positive");
+        }
+        if (!Double.isFinite(learningRate) || learningRate &lt;= 0.0) {
+            throw new IllegalArgumentException("learningRate must be positive and finite");
+        }
+        List&lt;DenseLayer&gt; layers = network.layers();
+        if (layers.get(0).inputSize() != dataset.inputs().cols()) {
+            throw new IllegalArgumentException("Network expects " + layers.get(0).inputSize()
+                + " inputs but dataset has " + dataset.inputs().cols());
+        }
+        int outputSize = layers.get(layers.size() - 1).outputSize();
+        if (outputSize != dataset.targets().cols()) {
+            throw new IllegalArgumentException("Network produces " + outputSize
+                + " outputs but dataset has " + dataset.targets().cols() + " target columns");
+        }
+
+        int samples = dataset.size();
+        double[] epochLosses = new double[epochs];
+        for (int epoch = 0; epoch &lt; epochs; epoch++) {
+            int[] order = shuffledIndices(samples, random);
+            double weightedLossSum = 0.0;
+            for (int start = 0; start &lt; samples; ) {
+                int count = Math.min(batchSize, samples - start);
+                Dataset batch = dataset.select(order, start, start + count);
+                double loss = Backpropagation.trainBatch(
+                    network, batch.inputs(), batch.targets(), objective, learningRate);
+                if (!Double.isFinite(loss)) {
+                    throw new IllegalStateException(
+                        "Loss became non-finite in epoch " + (epoch + 1)
+                            + "; try a smaller learning rate");
+                }
+                // Each batch loss is a mean, so multiplying by its size restores the batch total.
+                weightedLossSum += loss * count;
+                start += count;
+            }
+            epochLosses[epoch] = weightedLossSum / samples;
+        }
+        return epochLosses;
+    }
+
+    public static int[] shuffledIndices(int size, Random random) {
+        Objects.requireNonNull(random, "random");
+        if (size &lt;= 0) {
+            throw new IllegalArgumentException("size must be positive");
+        }
+        int[] order = new int[size];
+        for (int index = 0; index &lt; size; index++) {
+            order[index] = index;
+        }
+        for (int last = size - 1; last &gt; 0; last--) {
+            // Choose uniformly from the not-yet-fixed prefix 0..last, then fix that slot.
+            int chosen = random.nextInt(last + 1);
+            int swap = order[chosen];
+            order[chosen] = order[last];
+            order[last] = swap;
+        }
+        return order;
+    }
+
+    public static int batchCount(int samples, int batchSize) {
+        if (samples &lt;= 0 || batchSize &lt;= 0) {
+            throw new IllegalArgumentException("samples and batchSize must be positive");
+        }
+        // Ceiling division without the overflow risk of samples + batchSize - 1.
+        return samples / batchSize + (samples % batchSize == 0 ? 0 : 1);
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="and-gate">
+                    <h2>5. Demo: Learning the AND Gate</h2>
+                    <p>The AND gate outputs 1 only when both inputs are 1:</p>
+                    <table>
+                        <thead><tr><th>x₁</th><th>x₂</th><th>target</th></tr></thead>
+                        <tbody>
+                            <tr><td>0</td><td>0</td><td>0</td></tr>
+                            <tr><td>0</td><td>1</td><td>0</td></tr>
+                            <tr><td>1</td><td>0</td><td>0</td></tr>
+                            <tr><td>1</td><td>1</td><td>1</td></tr>
+                        </tbody>
+                    </table>
+                    <p>A single sigmoid neuron computes <code>σ(w₁x₁ + w₂x₂ + b)</code> and answers "1" when <code>w₁x₁ + w₂x₂ + b &gt; 0</code>. That condition draws a straight line through the input square. For AND, one line can separate <code>(1, 1)</code> from the other three corners, for example when both weights are positive and the bias is negative enough. The data are <strong>linearly separable</strong>, so this one-neuron network <em>can</em> represent the answer. Whether gradient descent finds weights in a given run depends on the initial weights, the learning rate and the number of epochs, so the demo prints what it actually measures.</p>
+                    <p>The configuration below uses 4 samples with batch size 2, so each epoch makes 2 updates. It trains for 2000 epochs with learning rate 1.0, uses <code>MeanSquaredError</code>, and seeds <code>Random</code> with 42. It prints the epoch loss every 400 epochs and then the final prediction for each row, thresholded at 0.5.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/demo/AndGateDemo.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.demo;
+
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.loss.MeanSquaredError;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import com.neuralscratch.training.Dataset;
+import com.neuralscratch.training.Trainer;
+import java.util.Random;
+
+public final class AndGateDemo {
+    private AndGateDemo() {
+    }
+
+    public static void main(String[] args) {
+        Matrix inputs = Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}});
+        Matrix targets = Matrix.of(new double[][] {{0}, {0}, {0}, {1}});
+        Dataset dataset = new Dataset(inputs, targets);
+
+        Random random = new Random(42);
+        Network network = new Network(DenseLayer.random(2, 1, new Sigmoid(), random));
+
+        int epochs = 2000;
+        int batchSize = 2;
+        double[] losses = Trainer.train(
+            network, dataset, new MeanSquaredError(), epochs, batchSize, 1.0, random);
+
+        System.out.println("Batches per epoch: " + Trainer.batchCount(dataset.size(), batchSize));
+        for (int epoch = 0; epoch &lt; epochs; epoch++) {
+            boolean report = epoch == 0 || (epoch + 1) % 400 == 0;
+            if (report) {
+                System.out.printf("epoch %4d  mean loss %.6f%n", epoch + 1, losses[epoch]);
+            }
+        }
+
+        Matrix predictions = network.predict(inputs);
+        int correct = 0;
+        for (int row = 0; row &lt; inputs.rows(); row++) {
+            double probability = predictions.get(row, 0);
+            int decision = probability &gt;= 0.5 ? 1 : 0;
+            int expected = (int) targets.get(row, 0);
+            correct += decision == expected ? 1 : 0;
+            System.out.printf("%d AND %d -&gt; %.4f -&gt; %d (expected %d)%n",
+                (int) inputs.get(row, 0), (int) inputs.get(row, 1),
+                probability, decision, expected);
+        }
+        System.out.println("Correct after thresholding at 0.5: " + correct + " / 4");
+    }
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Run it (after compiling as in section 7)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">java -cp out com.neuralscratch.demo.AndGateDemo</code></pre>
+                    </div>
+                    <p>What to look for: the first line should say <code>Batches per epoch: 2</code>; the loss column should trend downward; and for AND, the predictions for the first three rows should end near 0 and the last row near 1. The exact decimals depend on how your Chapter 4 <code>DenseLayer.random</code> draws its initial weights, so this page does not print numbers that would only be true for one implementation. The program reports the count of correct rows, so you do not have to trust a claim: either the final line says <code>4 / 4</code> or it does not, and then you experiment with epochs or the learning rate.</p>
+                </section>
+
+                <section id="monitoring">
+                    <h2>6. Shuffling, Holdout Data and Monitoring</h2>
+                    <h3>Do not judge a model on its training rows</h3>
+                    <p>The AND gate has only four possible inputs, and we train on all of them, so "4 / 4" means the model memorized the whole function. That is fine for a demo. For a real problem, keep some samples <em>out</em> of training and measure on them afterwards; otherwise a model that memorizes looks perfect. Split first, then train only on the training part. Shuffle indices before splitting if the file is sorted (for instance by class), or the holdout part may contain only one class.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">A holdout split with the pieces you already have</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">int[] order = Trainer.shuffledIndices(dataset.size(), new Random(123));
+int trainRows = dataset.size() * 8 / 10;
+Dataset train = dataset.select(order, 0, trainRows);
+Dataset holdout = dataset.select(order, trainRows, order.length);
+// Train on `train`. Evaluate on `holdout` once, after the hyperparameters are chosen.</code></pre>
+                    </div>
+                    <p>Repeatedly tuning epochs or learning rate while watching the holdout score gradually leaks that data into your decisions. Chapter 8 returns to this point for MNIST.</p>
+                    <h3>What to watch while training</h3>
+                    <ul>
+                        <li><strong>Steady decrease</strong> of the epoch loss means the updates are helping. Small bumps are normal because every epoch uses different batches.</li>
+                        <li><strong>A flat line</strong> can mean the learning rate is too small, the model is too weak, or the units are saturated or dead.</li>
+                        <li><strong>A rising loss or non-finite loss</strong> usually means the learning rate is too large. The trainer stops with an exception instead of continuing.</li>
+                        <li><strong>Loss near zero on training data but poor holdout results</strong> is overfitting.</li>
+                    </ul>
+                    <p>When you log, print only counts, epoch numbers and losses. Do not echo credentials, file contents, or personal data, and avoid dumping full weight matrices into shared logs; a model's weights can leak information about what it was trained on.</p>
+                </section>
+
+                <section id="testing">
+                    <h2>7. Checks You Can Run</h2>
+                    <p>The checks verify batch arithmetic (including a batch size larger than the dataset and <code>Integer.MAX_VALUE</code>), that a shuffle is a permutation and repeatable under a seed, <code>Dataset</code> validation, that the last slice contains only the remaining sample, argument validation in <code>Trainer</code>, and that the AND-gate loss after 1000 epochs is lower than after the first. They do <em>not</em> claim that every possible initialization converges; they claim only a lower loss for the seeded run.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/test/java/com/neuralscratch/training/TrainerChecks.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.training;
+
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.loss.MeanSquaredError;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import java.util.Arrays;
+import java.util.Random;
+
+public final class TrainerChecks {
+    private TrainerChecks() {
+    }
+
+    public static void main(String[] args) {
+        checkBatchCounts();
+        checkShuffle();
+        checkDatasetValidation();
+        checkSelectUsesActualBatchSize();
+        checkTrainerValidation();
+        checkLossFallsOnAnd();
+        System.out.println("All trainer checks passed");
+    }
+
+    private static void checkBatchCounts() {
+        require(Trainer.batchCount(4, 2) == 2, "4 samples, batch 2");
+        require(Trainer.batchCount(4, 3) == 2, "4 samples, batch 3");
+        require(Trainer.batchCount(6000, 32) == 188, "6000 samples, batch 32");
+        require(Trainer.batchCount(4, 100) == 1, "batch larger than data");
+        require(Trainer.batchCount(5, Integer.MAX_VALUE) == 1, "huge batch size");
+    }
+
+    private static void checkShuffle() {
+        int[] first = Trainer.shuffledIndices(100, new Random(7));
+        int[] second = Trainer.shuffledIndices(100, new Random(7));
+        require(Arrays.equals(first, second), "same seed must give same order");
+        int[] sorted = first.clone();
+        Arrays.sort(sorted);
+        for (int index = 0; index &lt; sorted.length; index++) {
+            require(sorted[index] == index, "shuffle must be a permutation");
+        }
+        require(!Arrays.equals(first, sorted), "100 items should not stay sorted");
+        require(Trainer.shuffledIndices(1, new Random(1))[0] == 0, "single item");
+    }
+
+    private static void checkDatasetValidation() {
+        Matrix two = Matrix.of(new double[][] {{1}, {2}});
+        Matrix three = Matrix.of(new double[][] {{1}, {2}, {3}});
+        expectIllegalArgument(() -&gt; new Dataset(two, three));
+        require(new Dataset(two, two).size() == 2, "size");
+    }
+
+    private static void checkSelectUsesActualBatchSize() {
+        Dataset dataset = new Dataset(
+            Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}}),
+            Matrix.of(new double[][] {{10}, {11}, {12}}));
+        Dataset last = dataset.select(new int[] {2, 0, 1}, 2, 3);
+        require(last.size() == 1, "last batch should hold the one remaining sample");
+        require(last.inputs().get(0, 0) == 0.0 &amp;&amp; last.inputs().get(0, 1) == 1.0, "row copy");
+        require(last.targets().get(0, 0) == 11.0, "target follows its input");
+        expectIllegalArgument(() -&gt; dataset.select(new int[] {0, 1, 5}, 0, 3));
+        expectIllegalArgument(() -&gt; dataset.select(new int[] {0, 1, 2}, 2, 2));
+    }
+
+    private static void checkTrainerValidation() {
+        Dataset dataset = andGate();
+        Network network = new Network(DenseLayer.random(2, 1, new Sigmoid(), new Random(1)));
+        MeanSquaredError objective = new MeanSquaredError();
+        Random random = new Random(1);
+        expectIllegalArgument(() -&gt; Trainer.train(network, dataset, objective, 0, 2, 0.5, random));
+        expectIllegalArgument(() -&gt; Trainer.train(network, dataset, objective, 1, 0, 0.5, random));
+        expectIllegalArgument(() -&gt; Trainer.train(network, dataset, objective, 1, 2, 0.0, random));
+        expectIllegalArgument(() -&gt; Trainer.train(network, dataset, objective, 1, 2,
+            Double.NaN, random));
+        Network wrongInputs = new Network(DenseLayer.random(3, 1, new Sigmoid(), new Random(1)));
+        expectIllegalArgument(() -&gt; Trainer.train(wrongInputs, dataset, objective, 1, 2, 0.5,
+            random));
+    }
+
+    private static void checkLossFallsOnAnd() {
+        Dataset dataset = andGate();
+        Random random = new Random(42);
+        Network network = new Network(DenseLayer.random(2, 1, new Sigmoid(), random));
+        double[] losses = Trainer.train(network, dataset, new MeanSquaredError(), 1000, 3, 1.0,
+            random);
+        require(losses.length == 1000, "one loss per epoch");
+        require(losses[999] &lt; losses[0], "loss should be lower after 1000 epochs");
+        System.out.printf("AND loss: first epoch %.6f, last epoch %.6f%n", losses[0], losses[999]);
+    }
+
+    private static Dataset andGate() {
+        return new Dataset(
+            Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}}),
+            Matrix.of(new double[][] {{0}, {0}, {0}, {1}}));
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw new AssertionError("Check failed: " + message);
+        }
+    }
+
+    private static void expectIllegalArgument(Runnable operation) {
+        try {
+            operation.run();
+            throw new AssertionError("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // Invalid training setup is rejected before any weight changes.
+        }
+    }
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">New-Item -ItemType Directory -Force out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
+java -cp out com.neuralscratch.training.TrainerChecks</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">macOS / Linux shell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">mkdir -p out
+javac -d out $(find src -name "*.java")
+java -cp out com.neuralscratch.training.TrainerChecks</code></pre>
+                    </div>
+                    <p>It prints the first and last AND-gate epoch losses and, if everything passes, <code>All trainer checks passed</code>.</p>
+                    <div class="callout callout-info">
+                        <div class="callout-title">Assumptions about earlier chapters</div>
+                        <p>As in Chapter 6, the demos use <code>new Sigmoid()</code> and <code>new MeanSquaredError()</code> with no-argument constructors, <code>DenseLayer.random(inputSize, outputSize, activation, random)</code>, <code>new Network(layer…)</code>, <code>network.layers()</code>, and <code>network.predict(Matrix)</code>. <code>Trainer</code> relies on <code>DenseLayer.inputSize()</code> and <code>outputSize()</code> for its shape checks and on <code>Backpropagation.trainBatch(network, inputs, targets, objective, learningRate)</code> returning the pre-update mean loss.</p>
+                    </div>
+                </section>
+
+                <section id="recap">
+                    <h2>What You Now Have</h2>
+                    <ul>
+                        <li><code>Dataset</code>: a validated, immutable pair of input and target matrices with a slice-copy method.</li>
+                        <li><code>Trainer.train</code>: seeded Fisher-Yates shuffling, correctly sized final batches, one sample-weighted pre-update loss per epoch, and early failure on divergence.</li>
+                        <li>An AND-gate demo and checks that report measured behavior without promising convergence for every setting.</li>
+                    </ul>
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Before Chapter 8</div>
+                        <p>Change the AND demo's batch size to 3, then to 4, and compare the printed batch count and the loss curves. Then change <code>new Random(42)</code> to another seed and observe how the first-epoch loss changes. You are seeing the role of initialization first-hand.</p>
+                    </div>
+                    <p>Next, we try to teach XOR to a network, learn why it needs a hidden layer, and read the real MNIST digit files to measure accuracy on images the network has never seen.</p>
+                </section>
+
+
+                <nav class="chapter-nav" aria-label="Chapter navigation">
+                    <a href="chapter6.html" class="btn btn-secondary">← Previous: Chapter 6</a>
+                    <a href="chapter8.html" class="btn btn-primary">Next: Chapter 8 →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 7</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Pure Java SE • No machine-learning dependencies • Built for understanding</p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

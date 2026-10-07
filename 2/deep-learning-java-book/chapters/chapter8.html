@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 8: Evaluation &amp; Testing - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 8: Evaluation &amp; Testing | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 8</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra &amp; Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation &amp; Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation &amp; Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter active" aria-current="page"><span class="chapter-num">8</span>Evaluation &amp; Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 8</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="toc.html" class="btn btn-secondary">Table of Contents</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 8</span>
+                    <h1>Evaluation &amp; Testing</h1>
+                    <p class="chapter-subtitle">Solve XOR, read raw MNIST files, and measure held-out accuracy without fooling yourself.</p>
+                </header>
+
+                <section id="our-plan">
+                    <h2>What We Are Building</h2>
+                    <p>A network is only useful if you can measure what it does honestly. This final chapter has two experiments and one discipline. First, <strong>XOR</strong>, the smallest problem that needs a hidden layer. Second, <strong>MNIST</strong>, the classic 28×28 handwritten-digit dataset, read from raw IDX files by our own parser and scored on images the network never trained on. The discipline is simple: report measured numbers, separate training data from test data, and check inputs before trusting them.</p>
+                    <table>
+                        <thead><tr><th>File</th><th>Role</th></tr></thead>
+                        <tbody>
+                            <tr><td><code>demo/XorDemo.java</code></td><td>Shows that one neuron fails XOR, then trains a 2 → 4 → 1 network with <code>Trainer</code>.</td></tr>
+                            <tr><td><code>data/Mnist.java</code></td><td>A validating IDX reader that returns a <code>Dataset</code>.</td></tr>
+                            <tr><td><code>evaluation/Metrics.java</code></td><td>Argmax, accuracy and confusion matrix in plain Java.</td></tr>
+                            <tr><td><code>demo/MnistDemo.java</code></td><td>A runner that trains 784 → 64 → 10 and evaluates held-out test images.</td></tr>
+                            <tr><td><code>evaluation/EvaluationChecks.java</code></td><td>Checks for metrics and for IDX magic numbers, counts, truncation and gzip.</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+
+                <section id="xor">
+                    <h2>1. XOR: Why One Neuron Is Not Enough</h2>
+                    <p>XOR ("exclusive or") answers 1 when exactly one of its two inputs is 1:</p>
+                    <table>
+                        <thead><tr><th>x₁</th><th>x₂</th><th>expected target</th></tr></thead>
+                        <tbody>
+                            <tr><td>0</td><td>0</td><td>0</td></tr>
+                            <tr><td>0</td><td>1</td><td>1</td></tr>
+                            <tr><td>1</td><td>0</td><td>1</td></tr>
+                            <tr><td>1</td><td>1</td><td>0</td></tr>
+                        </tbody>
+                    </table>
+                    <p>This table lists the <em>targets</em> we want, not anything a network has produced. A single sigmoid neuron answers 1 when <code>w₁x₁ + w₂x₂ + b &gt; 0</code>. Suppose it got all four rows right. Row <code>(0,0)</code> needs <code>b ≤ 0</code>. Rows <code>(0,1)</code> and <code>(1,0)</code> need <code>w₂ + b &gt; 0</code> and <code>w₁ + b &gt; 0</code>. Adding the last two gives <code>w₁ + w₂ + 2b &gt; 0</code>. Row <code>(1,1)</code> needs <code>w₁ + w₂ + b ≤ 0</code>. Subtracting, <code>b &gt; 0</code>, contradicting <code>b ≤ 0</code>. No weights exist, however long you train. A mathematical impossibility has been proven, and <code>XorDemo</code> will confirm that the baseline scores at most 3 of 4.</p>
+                    <h3>What a hidden layer adds</h3>
+                    <p>A layer of hidden sigmoid neurons computes several different lines and bends the input square into a new space. In that space the two classes can be separated by one line, which the output neuron draws. The nonlinear activation is essential: without it, stacked layers collapse into one matrix multiplication and remain a single line. This is why Chapter 3's activations matter.</p>
+                    <h3>The XOR runner</h3>
+                    <p>The program first trains the one-neuron baseline and reports its accuracy. Then it builds <code>2 → 4 → 1</code> with sigmoid activations, trains with <code>Trainer</code> and <code>MeanSquaredError</code> for 8000 epochs at learning rate 1.0, and prints the predictions. Neural-network training from random weights occasionally lands in a poor region, so the runner tries seeds 1 through 10, one fresh network each, and stops at the first one that gets all four rows right. It reports which seed worked or admits that none did. We do not hide the failures; a restart is a legitimate, honest technique, and the output says exactly what happened.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/demo/XorDemo.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.demo;
+
+import com.neuralscratch.activation.Sigmoid;
+import com.neuralscratch.loss.MeanSquaredError;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import com.neuralscratch.training.Dataset;
+import com.neuralscratch.training.Trainer;
+import java.util.Random;
+
+public final class XorDemo {
+    private static final int EPOCHS = 8000;
+    private static final int BATCH_SIZE = 4;
+    private static final double LEARNING_RATE = 1.0;
+    private static final int MAX_ATTEMPTS = 10;
+
+    private XorDemo() {
+    }
+
+    public static void main(String[] args) {
+        Matrix inputs = Matrix.of(new double[][] {{0, 0}, {0, 1}, {1, 0}, {1, 1}});
+        Matrix targets = Matrix.of(new double[][] {{0}, {1}, {1}, {0}});
+        Dataset dataset = new Dataset(inputs, targets);
+
+        System.out.println("Baseline: one sigmoid neuron, no hidden layer");
+        Random baselineRandom = new Random(1);
+        Network baseline = new Network(DenseLayer.random(2, 1, new Sigmoid(), baselineRandom));
+        Trainer.train(baseline, dataset, new MeanSquaredError(), EPOCHS, BATCH_SIZE,
+            LEARNING_RATE, baselineRandom);
+        int baselineCorrect = report(baseline, inputs, targets);
+        System.out.println("A single neuron cannot get all four rows right; it got "
+            + baselineCorrect + " / 4.");
+        System.out.println();
+
+        System.out.println("Network: 2 -&gt; 4 (sigmoid) -&gt; 1 (sigmoid)");
+        for (int attempt = 1; attempt &lt;= MAX_ATTEMPTS; attempt++) {
+            long seed = attempt;
+            Random random = new Random(seed);
+            Network network = new Network(
+                DenseLayer.random(2, 4, new Sigmoid(), random),
+                DenseLayer.random(4, 1, new Sigmoid(), random));
+            double[] losses = Trainer.train(network, dataset, new MeanSquaredError(), EPOCHS,
+                BATCH_SIZE, LEARNING_RATE, random);
+            System.out.printf("seed %d: first epoch loss %.6f, final epoch loss %.6f%n",
+                seed, losses[0], losses[EPOCHS - 1]);
+            if (report(network, inputs, targets) == 4) {
+                System.out.println("All four XOR rows are correct with seed " + seed + ".");
+                return;
+            }
+            System.out.println("Not all rows correct; trying the next seed.");
+        }
+        System.out.println("No seed solved XOR. Increase EPOCHS, hidden units, or change the rate.");
+    }
+
+    private static int report(Network network, Matrix inputs, Matrix targets) {
+        Matrix predictions = network.predict(inputs);
+        int correct = 0;
+        System.out.println("x1 x2  prediction  decision  target");
+        for (int row = 0; row &lt; inputs.rows(); row++) {
+            double probability = predictions.get(row, 0);
+            int decision = probability &gt;= 0.5 ? 1 : 0;
+            int expected = (int) targets.get(row, 0);
+            correct += decision == expected ? 1 : 0;
+            System.out.printf(" %d  %d     %.4f        %d        %d%n",
+                (int) inputs.get(row, 0), (int) inputs.get(row, 1),
+                probability, decision, expected);
+        }
+        return correct;
+    }
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Run it</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">java -cp out com.neuralscratch.demo.XorDemo</code></pre>
+                    </div>
+                    <p>Read the output like this. The baseline table must show at least one row where <code>decision</code> differs from <code>target</code>. For the hidden-layer network, a successful attempt prints decimals near 0 for rows 1 and 4 and near 1 for rows 2 and 3, followed by <code>All four XOR rows are correct</code>. The exact decimals depend on your <code>DenseLayer.random</code> initialization, so none are printed here. If no seed succeeds on your machine, raise <code>EPOCHS</code>, use more hidden neurons, or vary the learning rate, and rerun.</p>
+                    <div class="callout callout-info">
+                        <div class="callout-title">Pure Java check for the result</div>
+                        <p>The program itself is the verification: it compares each thresholded prediction with the table above and counts matches. It never asserts success; it states how many of four rows were correct.</p>
+                    </div>
+                </section>
+
+                <section id="idx">
+                    <h2>2. Reading MNIST from Raw IDX Files</h2>
+                    <p>MNIST distributes its images and labels in the <strong>IDX</strong> binary format. All integers are <strong>big-endian</strong> 32-bit values, which is exactly what <code>DataInputStream.readInt()</code> reads. An image file looks like this:</p>
+                    <table>
+                        <thead><tr><th>Offset</th><th>Content</th><th>Expected value</th></tr></thead>
+                        <tbody>
+                            <tr><td>0</td><td>magic number</td><td>2051 (<code>0x00000803</code>)</td></tr>
+                            <tr><td>4</td><td>image count</td><td>for example 60000 or 10000</td></tr>
+                            <tr><td>8</td><td>rows</td><td>28</td></tr>
+                            <tr><td>12</td><td>columns</td><td>28</td></tr>
+                            <tr><td>16</td><td>pixels</td><td>count × 784 unsigned bytes, row by row</td></tr>
+                        </tbody>
+                    </table>
+                    <p>A label file has magic number 2049 (<code>0x00000801</code>), a count, and then one byte per label from 0 to 9. The magic number is your first defense: a wrong file, a text file, or a compressed file that was not decompressed fails immediately with a clear message instead of producing nonsense.</p>
+                    <p>Java's <code>byte</code> is <em>signed</em>, so a pixel of 255 would read as −1. <code>readUnsignedByte()</code> returns 0 to 255 as an <code>int</code>. We divide by 255.0 to get inputs in <code>[0, 1]</code>. Small, similarly scaled inputs keep the first layer's pre-activations moderate, which makes gradient descent far better behaved than raw 0–255 values. Each label becomes a <strong>one-hot</strong> row of length 10: all zeros except a 1 at the digit's index.</p>
+                    <h3>Defensive checks in the reader</h3>
+                    <ul>
+                        <li>Wrong magic numbers, a non-28×28 shape, a non-positive image count, and an image count that differs from the label count all raise <code>IOException</code> with an explanatory message.</li>
+                        <li>A short file is a <strong>truncated</strong> file. <code>DataInputStream</code> signals it with <code>EOFException</code>; we convert that into a message such as <code>Truncated IDX data while reading image 41</code>.</li>
+                        <li>A label above 9 is rejected.</li>
+                        <li><code>maxSamples</code> must be positive and the loader reads at most that many rows. This bounds memory <em>and</em> prevents an enormous count in a corrupt header from triggering a huge allocation. If it covers the whole file, we also reject extra trailing bytes. If it does not, bytes beyond the requested prefix are not examined, so truncation after the prefix goes unnoticed by design.</li>
+                        <li>Both gzip-compressed (<code>.gz</code>) and raw files work: <code>load</code> peeks at the first two bytes for the gzip signature <code>0x1f 0x8b</code> and wraps the stream in <code>GZIPInputStream</code> only if needed. A try-with-resources block closes both file streams on every path, and <code>open</code> closes its stream if detection fails, so nothing leaks.</li>
+                    </ul>
+                    <p><code>Mnist.read</code> takes already-open streams, which lets our checks feed it small in-memory files; <code>Mnist.load</code> does the file handling for real use. We never load a path from a network address, and nothing here downloads data.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/data/Mnist.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.data;
+
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.training.Dataset;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.zip.GZIPInputStream;
+
+public final class Mnist {
+    public static final int IMAGE_SIDE = 28;
+    public static final int PIXELS = IMAGE_SIDE * IMAGE_SIDE;
+    public static final int CLASSES = 10;
+
+    private static final int IMAGE_MAGIC = 2051;
+    private static final int LABEL_MAGIC = 2049;
+
+    private Mnist() {
+    }
+
+    public static Dataset load(Path imagesPath, Path labelsPath, int maxSamples)
+            throws IOException {
+        Objects.requireNonNull(imagesPath, "imagesPath");
+        Objects.requireNonNull(labelsPath, "labelsPath");
+        requirePositiveLimit(maxSamples);
+        try (InputStream images = open(imagesPath); InputStream labels = open(labelsPath)) {
+            return read(images, labels, maxSamples);
+        }
+    }
+
+    public static Dataset read(InputStream imageStream, InputStream labelStream, int maxSamples)
+            throws IOException {
+        Objects.requireNonNull(imageStream, "imageStream");
+        Objects.requireNonNull(labelStream, "labelStream");
+        requirePositiveLimit(maxSamples);
+        DataInputStream images = new DataInputStream(new BufferedInputStream(imageStream));
+        DataInputStream labels = new DataInputStream(new BufferedInputStream(labelStream));
+
+        int imageMagic = readInt(images, "image magic number");
+        if (imageMagic != IMAGE_MAGIC) {
+            throw new IOException("Not an IDX image file: magic number " + imageMagic
+                + " but expected " + IMAGE_MAGIC);
+        }
+        int imageCount = readInt(images, "image count");
+        int rows = readInt(images, "image rows");
+        int cols = readInt(images, "image columns");
+        if (rows != IMAGE_SIDE || cols != IMAGE_SIDE) {
+            throw new IOException("Expected 28x28 images but file declares " + rows + "x" + cols);
+        }
+
+        int labelMagic = readInt(labels, "label magic number");
+        if (labelMagic != LABEL_MAGIC) {
+            throw new IOException("Not an IDX label file: magic number " + labelMagic
+                + " but expected " + LABEL_MAGIC);
+        }
+        int labelCount = readInt(labels, "label count");
+
+        if (imageCount &lt;= 0) {
+            throw new IOException("Image file declares " + imageCount + " images");
+        }
+        if (imageCount != labelCount) {
+            throw new IOException("Image count " + imageCount + " does not match label count "
+                + labelCount);
+        }
+
+        int samples = Math.min(maxSamples, imageCount);
+        double[][] pixels = new double[samples][PIXELS];
+        double[][] oneHot = new double[samples][CLASSES];
+        for (int sample = 0; sample &lt; samples; sample++) {
+            for (int pixel = 0; pixel &lt; PIXELS; pixel++) {
+                int value = readUnsignedByte(images, "image " + sample);
+                // Scale 0..255 to 0..1 so the first layer sees small inputs.
+                pixels[sample][pixel] = value / 255.0;
+            }
+            int label = readUnsignedByte(labels, "label " + sample);
+            if (label &gt;= CLASSES) {
+                throw new IOException("Label " + label + " at sample " + sample
+                    + " is outside 0..9");
+            }
+            oneHot[sample][label] = 1.0;
+        }
+        if (samples == imageCount &amp;&amp; (images.read() != -1 || labels.read() != -1)) {
+            throw new IOException("IDX file has extra bytes after the declared " + imageCount
+                + " samples");
+        }
+        return new Dataset(Matrix.of(pixels), Matrix.of(oneHot));
+    }
+
+    private static InputStream open(Path path) throws IOException {
+        InputStream raw = new BufferedInputStream(Files.newInputStream(path));
+        try {
+            raw.mark(2);
+            int first = raw.read();
+            int second = raw.read();
+            raw.reset();
+            if (first == 0x1f &amp;&amp; second == 0x8b) {
+                return new GZIPInputStream(raw);
+            }
+            return raw;
+        } catch (IOException | RuntimeException failure) {
+            raw.close();
+            throw failure;
+        }
+    }
+
+    private static void requirePositiveLimit(int maxSamples) {
+        if (maxSamples &lt;= 0) {
+            throw new IllegalArgumentException("maxSamples must be positive");
+        }
+    }
+
+    private static int readInt(DataInputStream in, String what) throws IOException {
+        try {
+            return in.readInt();
+        } catch (EOFException truncated) {
+            throw new IOException("Truncated IDX header while reading " + what, truncated);
+        }
+    }
+
+    private static int readUnsignedByte(DataInputStream in, String what) throws IOException {
+        try {
+            return in.readUnsignedByte();
+        } catch (EOFException truncated) {
+            throw new IOException("Truncated IDX data while reading " + what, truncated);
+        }
+    }
+}</code></pre>
+                    </div>
+                    <div class="callout callout-warning">
+                        <div class="callout-title">Memory budget</div>
+                        <p>A <code>double</code> is 8 bytes. 6000 images × 784 pixels × 8 bytes ≈ 38 MB, and <code>Matrix.of</code> temporarily keeps a copy, so peak use is roughly double. The full 60000-image training set would be about ten times that, plus batch copies, so the demo limits itself to 6000 training and 1000 test images. You can raise the limits if your JVM heap allows; add <code>-Xmx2g</code> to the <code>java</code> command for a larger heap.</p>
+                    </div>
+                </section>
+
+                <section id="metrics">
+                    <h2>3. Accuracy and the Confusion Matrix</h2>
+                    <p><strong>Accuracy</strong> is the fraction of samples whose predicted class equals the true class. It is a good first number and a poor only number: a model can score 90 percent while never getting one digit right. A <strong>confusion matrix</strong> counts, for every pair (true class, predicted class), how many samples fell there. Rows are true digits, columns are predictions; the diagonal holds correct answers, and off-diagonal cells show specific mistakes such as 4s read as 9s.</p>
+                    <p>To predict, run <code>network.predict(testInputs)</code> to get logits, apply <code>Softmax.apply</code> to get probabilities, and take the <strong>argmax</strong> of each row. Softmax never changes which entry is largest, so the argmax of probabilities equals the argmax of logits, but the probabilities are what you would show as "confidence". Targets are one-hot, so the same <code>argmax</code> recovers the true label.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/evaluation/Metrics.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.evaluation;
+
+import com.neuralscratch.math.Matrix;
+import java.util.Objects;
+
+public final class Metrics {
+    private Metrics() {
+    }
+
+    public static int[] argmax(Matrix scores) {
+        Objects.requireNonNull(scores, "scores");
+        int[] winners = new int[scores.rows()];
+        for (int row = 0; row &lt; scores.rows(); row++) {
+            int best = 0;
+            for (int col = 0; col &lt; scores.cols(); col++) {
+                double value = scores.get(row, col);
+                if (Double.isNaN(value)) {
+                    throw new IllegalArgumentException("NaN score at row " + row);
+                }
+                // Strict comparison keeps the first class when scores tie.
+                if (value &gt; scores.get(row, best)) {
+                    best = col;
+                }
+            }
+            winners[row] = best;
+        }
+        return winners;
+    }
+
+    public static double accuracy(int[] actual, int[] predicted) {
+        requireSameLength(actual, predicted);
+        int correct = 0;
+        for (int index = 0; index &lt; actual.length; index++) {
+            if (actual[index] == predicted[index]) {
+                correct++;
+            }
+        }
+        return (double) correct / actual.length;
+    }
+
+    public static int[][] confusionMatrix(int[] actual, int[] predicted, int classes) {
+        requireSameLength(actual, predicted);
+        if (classes &lt;= 0) {
+            throw new IllegalArgumentException("classes must be positive");
+        }
+        int[][] counts = new int[classes][classes];
+        for (int index = 0; index &lt; actual.length; index++) {
+            if (actual[index] &lt; 0 || actual[index] &gt;= classes
+                    || predicted[index] &lt; 0 || predicted[index] &gt;= classes) {
+                throw new IllegalArgumentException("Class index out of range at sample " + index);
+            }
+            // Row = true class, column = predicted class.
+            counts[actual[index]][predicted[index]]++;
+        }
+        return counts;
+    }
+
+    public static String formatConfusion(int[][] counts) {
+        StringBuilder text = new StringBuilder("actual\\predicted");
+        for (int col = 0; col &lt; counts.length; col++) {
+            text.append(String.format("%6d", col));
+        }
+        text.append(System.lineSeparator());
+        for (int row = 0; row &lt; counts.length; row++) {
+            text.append(String.format("%16d", row));
+            for (int col = 0; col &lt; counts[row].length; col++) {
+                text.append(String.format("%6d", counts[row][col]));
+            }
+            text.append(System.lineSeparator());
+        }
+        return text.toString();
+    }
+
+    private static void requireSameLength(int[] actual, int[] predicted) {
+        Objects.requireNonNull(actual, "actual");
+        Objects.requireNonNull(predicted, "predicted");
+        if (actual.length == 0 || actual.length != predicted.length) {
+            throw new IllegalArgumentException(
+                "Need equal, non-empty label arrays but got " + actual.length
+                    + " and " + predicted.length);
+        }
+    }
+}</code></pre>
+                    </div>
+                </section>
+
+                <section id="mnist-demo">
+                    <h2>4. Training 784 → 64 → 10 on MNIST</h2>
+                    <p>The network has 784 inputs (one per pixel), 64 hidden ReLU neurons, and 10 <code>Identity</code> outputs, which are logits for <code>SoftmaxCrossEntropy</code>. The parameter count is <code>784×64 + 64 + 64×10 + 10 = 50,890</code>. The runner takes four local file paths in this order: training images, training labels, test images, test labels.</p>
+                    <p>It reads the first 6000 training rows and the first 1000 test rows, trains 10 epochs with batch size 32 and learning rate 0.05, and prints the loss for each epoch. It then predicts the held-out images <em>once</em> at the end, prints test loss, test accuracy, and the confusion matrix. The program prints only counts, losses and metrics, and it does not write any files or open network connections. If a file cannot be opened, it prints a one-line error and exits with status 1.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/demo/MnistDemo.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.demo;
+
+import com.neuralscratch.activation.Identity;
+import com.neuralscratch.activation.ReLU;
+import com.neuralscratch.activation.Softmax;
+import com.neuralscratch.data.Mnist;
+import com.neuralscratch.evaluation.Metrics;
+import com.neuralscratch.loss.SoftmaxCrossEntropy;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.nn.DenseLayer;
+import com.neuralscratch.nn.Network;
+import com.neuralscratch.training.Dataset;
+import com.neuralscratch.training.Trainer;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Random;
+
+public final class MnistDemo {
+    private static final int TRAIN_LIMIT = 6000;
+    private static final int TEST_LIMIT = 1000;
+    private static final int EPOCHS = 10;
+    private static final int BATCH_SIZE = 32;
+    private static final double LEARNING_RATE = 0.05;
+    private static final long SEED = 7L;
+
+    private MnistDemo() {
+    }
+
+    public static void main(String[] args) {
+        if (args.length != 4) {
+            System.err.println("Usage: java com.neuralscratch.demo.MnistDemo "
+                + "&lt;train-images&gt; &lt;train-labels&gt; &lt;test-images&gt; &lt;test-labels&gt;");
+            System.exit(2);
+        }
+        try {
+            run(Path.of(args[0]), Path.of(args[1]), Path.of(args[2]), Path.of(args[3]));
+        } catch (IOException | IllegalArgumentException | IllegalStateException failure) {
+            System.err.println("MNIST demo failed: " + failure.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void run(Path trainImages, Path trainLabels, Path testImages, Path testLabels)
+            throws IOException {
+        Dataset train = Mnist.load(trainImages, trainLabels, TRAIN_LIMIT);
+        Dataset test = Mnist.load(testImages, testLabels, TEST_LIMIT);
+        System.out.println("Loaded " + train.size() + " training and " + test.size()
+            + " test images");
+
+        Random random = new Random(SEED);
+        Network network = new Network(
+            DenseLayer.random(Mnist.PIXELS, 64, new ReLU(), random),
+            DenseLayer.random(64, Mnist.CLASSES, new Identity(), random));
+        SoftmaxCrossEntropy objective = new SoftmaxCrossEntropy();
+
+        double[] losses = Trainer.train(network, train, objective, EPOCHS, BATCH_SIZE,
+            LEARNING_RATE, random);
+        for (int epoch = 0; epoch &lt; losses.length; epoch++) {
+            System.out.printf("epoch %2d  training loss %.4f%n", epoch + 1, losses[epoch]);
+        }
+
+        Matrix logits = network.predict(test.inputs());
+        Matrix probabilities = Softmax.apply(logits);
+        int[] predicted = Metrics.argmax(probabilities);
+        int[] actual = Metrics.argmax(test.targets());
+
+        System.out.printf("Held-out test loss: %.4f%n",
+            objective.loss(logits, logits, test.targets()));
+        System.out.printf("Held-out test accuracy: %.2f%% (%d images)%n",
+            100.0 * Metrics.accuracy(actual, predicted), actual.length);
+        System.out.println(Metrics.formatConfusion(
+            Metrics.confusionMatrix(actual, predicted, Mnist.CLASSES)));
+    }
+}</code></pre>
+                    </div>
+                    <h3>Getting the files</h3>
+                    <p>This book does not include the dataset or a download address. Obtain the four MNIST IDX files yourself from a source you trust, such as a copy your course or organization already provides, and verify them against the source's published checksums if available. They are normally named like <code>train-images-idx3-ubyte</code>, <code>train-labels-idx1-ubyte</code>, <code>t10k-images-idx3-ubyte</code>, <code>t10k-labels-idx1-ubyte</code>, with or without a <code>.gz</code> suffix. Some mirrors rename files or use different sets, so if the reader rejects a file, read its message: it tells you which header field was wrong.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (replace the four paths with your own files)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">java -cp out com.neuralscratch.demo.MnistDemo `
+  data\train-images-idx3-ubyte data\train-labels-idx1-ubyte `
+  data\t10k-images-idx3-ubyte data\t10k-labels-idx1-ubyte</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">macOS / Linux shell</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">java -cp out com.neuralscratch.demo.MnistDemo \
+  data/train-images-idx3-ubyte data/train-labels-idx1-ubyte \
+  data/t10k-images-idx3-ubyte data/t10k-labels-idx1-ubyte</code></pre>
+                    </div>
+                    <h3>Reading the result without fooling yourself</h3>
+                    <p>No accuracy figure is printed on this page because it would be a guess. The number depends on your files, your initialization code from Chapter 4, and the fixed seed. In our own development runs against a reference implementation of the Chapters 3–5 contract, the loss fell steadily over the 10 epochs and held-out accuracy ended well above the 10 percent expected from random guessing, and it was not near-perfect. Treat that as an observation about one setup, not a promise about yours. Plain gradient descent with a small network and 6000 images is a learning exercise, not a record attempt.</p>
+                    <ul>
+                        <li>If <code>Trainer</code> reports a non-finite loss, lower the learning rate constant. Large initial weights can overflow on 784 inputs.</li>
+                        <li>Compare training loss with test loss. A large gap suggests overfitting; both being high suggests underfitting, so try more epochs, more hidden units, or a tuned learning rate.</li>
+                        <li>Look at the confusion matrix, not just the headline accuracy. Digits whose shapes are similar are mixed up more often.</li>
+                        <li>The test images must <em>never</em> take part in training or tuning. If you want to tune epochs or learning rate, carve a validation set out of the training file (a later slice of its rows, for instance), tune against it, and open the test set once at the end. Our runner touches the test data exactly once, after training.</li>
+                    </ul>
+                </section>
+
+                <section id="checks">
+                    <h2>5. Checks for the Reader and the Metrics</h2>
+                    <p>Data bugs are quiet; they simply make accuracy bad. These checks build tiny IDX files in memory with <code>DataOutputStream</code> and verify the behavior described above. They cover a valid file, the pixel scale (0 maps to 0.0 and 255 to 1.0), one-hot labels, the sample limit, a wrong image magic, a wrong label magic, mismatched counts, a non-28×28 header, a truncated header, truncated pixel data, truncated labels, a label of 10, extra bytes, a zero limit, and a real gzip file written to a temporary directory and deleted afterwards. They also verify argmax tie-breaking, accuracy, and that the confusion matrix counts every sample once.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/test/java/com/neuralscratch/evaluation/EvaluationChecks.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.evaluation;
+
+import com.neuralscratch.data.Mnist;
+import com.neuralscratch.math.Matrix;
+import com.neuralscratch.training.Dataset;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
+
+public final class EvaluationChecks {
+    private EvaluationChecks() {
+    }
+
+    private interface IoAction {
+        void run() throws IOException;
+    }
+
+    public static void main(String[] args) throws IOException {
+        checkMetrics();
+        checkValidIdx();
+        checkRejectedIdx();
+        checkGzipFiles();
+        System.out.println("All evaluation checks passed");
+    }
+
+    private static void checkMetrics() {
+        Matrix scores = Matrix.of(new double[][] {{0.1, 0.7, 0.2}, {0.5, 0.5, 0.0}, {0, 0, 1}});
+        int[] predicted = Metrics.argmax(scores);
+        require(predicted[0] == 1 &amp;&amp; predicted[1] == 0 &amp;&amp; predicted[2] == 2, "argmax and ties");
+        int[] actual = {1, 1, 2};
+        require(Math.abs(Metrics.accuracy(actual, predicted) - 2.0 / 3.0) &lt; 1e-12, "accuracy");
+        int[][] confusion = Metrics.confusionMatrix(actual, predicted, 3);
+        require(confusion[1][1] == 1 &amp;&amp; confusion[1][0] == 1 &amp;&amp; confusion[2][2] == 1,
+            "confusion cells");
+        int total = 0;
+        for (int[] row : confusion) {
+            for (int count : row) {
+                total += count;
+            }
+        }
+        require(total == actual.length, "confusion counts every sample once");
+        expectIllegalArgument(() -&gt; Metrics.confusionMatrix(new int[] {3}, new int[] {0}, 3));
+        expectIllegalArgument(() -&gt; Metrics.accuracy(new int[] {1}, new int[] {1, 2}));
+        expectIllegalArgument(() -&gt; Metrics.argmax(Matrix.of(new double[][] {{Double.NaN, 1}})));
+    }
+
+    private static void checkValidIdx() throws IOException {
+        byte[] images = imageFile(3, 28, 28, 3 * 784);
+        byte[] labels = labelFile(3, new int[] {0, 7, 9});
+        Dataset dataset = Mnist.read(stream(images), stream(labels), 100);
+        require(dataset.size() == 3, "all three samples");
+        require(dataset.inputs().cols() == 784 &amp;&amp; dataset.targets().cols() == 10, "shapes");
+        require(dataset.inputs().get(0, 0) == 0.0, "pixel 0 scales to 0.0");
+        require(dataset.inputs().get(0, 255) == 1.0, "pixel 255 scales to 1.0");
+        require(dataset.targets().get(1, 7) == 1.0 &amp;&amp; dataset.targets().get(1, 0) == 0.0,
+            "one-hot label");
+        Dataset limited = Mnist.read(stream(images), stream(labels), 2);
+        require(limited.size() == 2, "limit keeps the first two samples");
+    }
+
+    private static void checkRejectedIdx() {
+        byte[] labels = labelFile(2, new int[] {1, 2});
+        byte[] images = imageFile(2, 28, 28, 2 * 784);
+        expectIo(() -&gt; Mnist.read(stream(header(2049, 2, 28, 28)), stream(labels), 10));
+        expectIo(() -&gt; Mnist.read(stream(images), stream(header(2051, 2)), 10));
+        expectIo(() -&gt; Mnist.read(stream(images), stream(labelFile(3, new int[] {1, 2, 3})), 10));
+        expectIo(() -&gt; Mnist.read(stream(imageFile(2, 14, 14, 2 * 196)), stream(labels), 10));
+        expectIo(() -&gt; Mnist.read(stream(new byte[] {0, 0, 8}), stream(labels), 10));
+        expectIo(() -&gt; Mnist.read(stream(imageFile(2, 28, 28, 784 + 100)), stream(labels), 10));
+        expectIo(() -&gt; Mnist.read(stream(images), stream(labelFile(2, new int[] {1, 2}, 1)), 10));
+        expectIo(() -&gt; Mnist.read(stream(images), stream(labelFile(2, new int[] {1, 10})), 10));
+        expectIo(() -&gt; Mnist.read(stream(imageFile(2, 28, 28, 2 * 784 + 5)), stream(labels), 10));
+        expectIllegalArgument(() -&gt; {
+            try {
+                Mnist.read(stream(images), stream(labels), 0);
+            } catch (IOException unexpected) {
+                throw new AssertionError(unexpected);
+            }
+        });
+    }
+
+    private static void checkGzipFiles() throws IOException {
+        Path directory = Files.createTempDirectory("mnist-check");
+        Path imagePath = directory.resolve("images.gz");
+        Path labelPath = directory.resolve("labels");
+        try {
+            try (OutputStream out = new GZIPOutputStream(Files.newOutputStream(imagePath))) {
+                out.write(imageFile(2, 28, 28, 2 * 784));
+            }
+            Files.write(labelPath, labelFile(2, new int[] {4, 5}));
+            Dataset dataset = Mnist.load(imagePath, labelPath, 2);
+            require(dataset.size() == 2 &amp;&amp; dataset.targets().get(1, 5) == 1.0, "gzip image file");
+        } finally {
+            Files.deleteIfExists(imagePath);
+            Files.deleteIfExists(labelPath);
+            Files.deleteIfExists(directory);
+        }
+    }
+
+    private static byte[] header(int... values) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream out = new DataOutputStream(bytes)) {
+            for (int value : values) {
+                out.writeInt(value);
+            }
+        } catch (IOException impossible) {
+            throw new AssertionError(impossible);
+        }
+        return bytes.toByteArray();
+    }
+
+    private static byte[] imageFile(int declared, int rows, int cols, int pixelBytes) {
+        byte[] head = header(2051, declared, rows, cols);
+        byte[] file = new byte[head.length + pixelBytes];
+        System.arraycopy(head, 0, file, 0, head.length);
+        for (int index = 0; index &lt; pixelBytes; index++) {
+            file[head.length + index] = (byte) (index % 256);
+        }
+        return file;
+    }
+
+    private static byte[] labelFile(int declared, int[] labels) {
+        return labelFile(declared, labels, labels.length);
+    }
+
+    private static byte[] labelFile(int declared, int[] labels, int written) {
+        byte[] head = header(2049, declared);
+        byte[] file = new byte[head.length + written];
+        System.arraycopy(head, 0, file, 0, head.length);
+        for (int index = 0; index &lt; written; index++) {
+            file[head.length + index] = (byte) labels[index];
+        }
+        return file;
+    }
+
+    private static ByteArrayInputStream stream(byte[] bytes) {
+        return new ByteArrayInputStream(bytes);
+    }
+
+    private static void require(boolean condition, String message) {
+        if (!condition) {
+            throw new AssertionError("Check failed: " + message);
+        }
+    }
+
+    private static void expectIo(IoAction action) {
+        try {
+            action.run();
+            throw new AssertionError("Expected IOException");
+        } catch (IOException expected) {
+            // Bad IDX data must fail loudly instead of producing a partial dataset.
+        }
+    }
+
+    private static void expectIllegalArgument(Runnable action) {
+        try {
+            action.run();
+            throw new AssertionError("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+            // Invalid arguments are rejected immediately.
+        }
+    }
+}</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">New-Item -ItemType Directory -Force out | Out-Null
+javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
+java -cp out com.neuralscratch.evaluation.EvaluationChecks</code></pre>
+                    </div>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">macOS / Linux shell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-bash">mkdir -p out
+javac -d out $(find src -name "*.java")
+java -cp out com.neuralscratch.evaluation.EvaluationChecks</code></pre>
+                    </div>
+                    <p>It prints <code>All evaluation checks passed</code> when every check holds. Nothing in this chapter needs a third-party library: only <code>java.io</code>, <code>java.nio.file</code>, <code>java.util</code> and <code>java.util.zip</code>.</p>
+                    <div class="callout callout-info">
+                        <div class="callout-title">Assumptions about earlier chapters</div>
+                        <p>The demos use the agreed API: <code>new Sigmoid()</code>, <code>new ReLU()</code>, <code>new Identity()</code>, <code>new MeanSquaredError()</code>, <code>DenseLayer.random(...)</code>, <code>new Network(...)</code> and <code>network.predict(Matrix)</code>. If your constructors differ, change only those expressions.</p>
+                    </div>
+                </section>
+
+                <section id="recap">
+                    <h2>What You Now Have</h2>
+                    <ul>
+                        <li>A proof, and a runnable demonstration, that XOR needs a nonlinear hidden layer.</li>
+                        <li><code>Mnist</code>: a validating, leak-free IDX reader that handles raw and gzip files, scales pixels to <code>[0, 1]</code>, builds one-hot labels, and refuses malformed input.</li>
+                        <li><code>Metrics</code> and <code>MnistDemo</code>: argmax, accuracy, confusion matrix, and a held-out evaluation workflow.</li>
+                        <li>A full dependency-free stack: matrices, calculus checks, neurons, layers, backpropagation, ReLU, softmax cross-entropy, a shuffled trainer, and an evaluation toolkit.</li>
+                    </ul>
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Where to go next</div>
+                        <p>Try one change at a time and measure it: more hidden units, more epochs, a different seed, a 20% validation split from the training rows, or a second hidden layer. Because everything is plain Java, you can step through each calculation in a debugger and verify it against the formulas in these chapters.</p>
+                    </div>
+                    <p>You started with a single weighted sum and now have a trainable, testable classifier written entirely with the standard library.</p>
+                </section>
+
+
+                <nav class="chapter-nav" aria-label="Chapter navigation">
+                    <a href="chapter7.html" class="btn btn-secondary">← Previous: Chapter 7</a>
+                    <a href="toc.html" class="btn btn-primary">Back to Table of Contents →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 8</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">Pure Java SE • No machine-learning dependencies • Built for understanding</p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>

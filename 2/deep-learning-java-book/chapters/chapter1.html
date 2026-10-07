@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Chapter 1: Introduction to Neural Networks &amp; Why Pure Java? - Neural Networks from Scratch in Pure Java">
+    <title>Chapter 1: Introduction to Neural Networks &amp; Why Pure Java? | Neural Networks from Scratch in Pure Java</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+</head>
+<body>
+    <aside class="sidebar" role="navigation" aria-label="Book chapters">
+        <div class="sidebar-header">
+            <h1 class="sidebar-title">Neural Networks from Scratch in Pure Java</h1>
+            <p class="sidebar-subtitle">Chapter 1</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-part">
+                <div class="nav-part-title">Part I: Foundations</div>
+                <a href="chapter1.html" class="nav-chapter active"><span class="chapter-num">1</span>Introduction to Neural Networks &amp; Why Pure Java?</a>
+                <a href="chapter2.html" class="nav-chapter"><span class="chapter-num">2</span>The Math Blueprint – Linear Algebra & Calculus in Java</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part II: The Neuron</div>
+                <a href="chapter3.html" class="nav-chapter"><span class="chapter-num">3</span>The Architecture of a Neuron</a>
+                <a href="chapter4.html" class="nav-chapter"><span class="chapter-num">4</span>Building the Network Layers</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part III: Learning</div>
+                <a href="chapter5.html" class="nav-chapter"><span class="chapter-num">5</span>Backpropagation & Gradient Descent</a>
+                <a href="chapter6.html" class="nav-chapter"><span class="chapter-num">6</span>Activation & Loss Functions</a>
+            </div>
+            <div class="nav-part">
+                <div class="nav-part-title">Part IV: Application</div>
+                <a href="chapter7.html" class="nav-chapter"><span class="chapter-num">7</span>Training the Network</a>
+                <a href="chapter8.html" class="nav-chapter"><span class="chapter-num">8</span>Evaluation & Testing</a>
+            </div>
+        </nav>
+    </aside>
+
+    <main class="main-content" role="main">
+        <header class="top-header" role="banner">
+            <div class="header-left">
+                <button class="menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
+                <nav class="breadcrumb" aria-label="Breadcrumb">
+                    <a href="../index.html">Home</a> / <a href="toc.html">Table of Contents</a> / <span>Chapter 1</span>
+                </nav>
+            </div>
+            <div class="header-right">
+                <a href="chapter2.html" class="btn btn-primary">Next Chapter →</a>
+            </div>
+        </header>
+
+        <div class="chapter-container">
+            <article class="chapter-content">
+                <header class="chapter-header">
+                    <span class="chapter-badge">Chapter 1</span>
+                    <h1>Introduction to Neural Networks &amp; Why Pure Java?</h1>
+                    <p class="chapter-subtitle">Setting the philosophy, explaining the JVM benefits, and setting up the project structure</p>
+                </header>
+
+                <section id="what-is-a-neural-network">
+                    <h2>What Is a Neural Network?</h2>
+                    
+                    <p>At its core, a <strong>neural network</strong> is a mathematical function that maps inputs to outputs. It's a composition of simpler functions—each inspired by how biological neurons process signals. But let's be clear: the "neural" in neural network is a loose metaphor. We're not simulating brains; we're building function approximators.</p>
+
+                    <div class="callout callout-info">
+                        <div class="callout-title">💡 Key Insight</div>
+                        <p>A neural network is just a function <code>f: ℝⁿ → ℝᵐ</code> with many adjustable parameters (weights and biases). Learning is the process of finding parameter values that make <code>f(x) ≈ y</code> for your training data.</p>
+                    </div>
+
+                    <h3>From Biology to Mathematics</h3>
+                    <p>Biological neurons receive signals through dendrites, integrate them in the cell body, and fire an action potential through the axon if the combined signal exceeds a threshold. The artificial equivalent:</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-lang">The Artificial Neuron (Mathematical View)</span>
+                        </div>
+                        <pre><code class="language-text">Input vector:     x = [x₁, x₂, ..., xₙ]
+Weights:          w = [w₁, w₂, ..., wₙ]
+Bias:             b ∈ ℝ
+
+Weighted sum:     z = w·x + b = Σ(wᵢ·xᵢ) + b
+Output:           y = σ(z)          ← activation function</code></pre>
+                    </div>
+
+                    <p>The <strong>weighted sum</strong> <code>z</code> represents the total input signal. The <strong>activation function</strong> <code>σ</code> (sigma) introduces non-linearity—without it, a network of any depth collapses to a single linear transformation.</p>
+
+                    <h3>The Universal Approximation Theorem (Intuitive Version)</h3>
+                    <p>One reason neural networks are powerful: with a suitable nonlinear activation, a network with one sufficiently wide hidden layer can approximate a continuous function as closely as desired <em>on a compact domain</em>. This is a statement about representational capacity, not a guarantee that training will find the right weights.</p>
+
+                    <p>Think of it like this: each neuron in a hidden layer learns to recognize a specific pattern (a "feature"). By combining many such pattern detectors with different weights, the network can construct arbitrarily complex decision boundaries.</p>
+
+                    <div class="callout callout-tip">
+                        <div class="callout-title">🎯 Practical Takeaway</div>
+                        <p>Depth (more layers) and width (more neurons per layer) increase what a network can represent, but do not guarantee learning. More parameters can make training and evaluation harder and increase the risk of overfitting.</p>
+                    </div>
+                </section>
+
+                <section id="why-build-from-scratch">
+                    <h2>Why Build From Scratch?</h2>
+
+                    <p>You might wonder: <em>"Why not just use Deeplearning4j, TensorFlow Java, or ONNX Runtime?"</em> Excellent question. Here's the honest answer:</p>
+
+                    <h3>Understanding vs. Using</h3>
+                    <p>Libraries hide details so you can focus on a task. Here, implementing backpropagation yourself makes the mechanics visible. You'll learn where to look when:</p>
+                    <ul>
+                        <li>Loss grows or becomes non-finite (check the learning rate and the data).</li>
+                        <li>The network does not learn (check shapes, activations, and gradients).</li>
+                        <li>Training accuracy rises but held-out accuracy does not (check for overfitting).</li>
+                    </ul>
+
+                    <h3>No Dependency Lock-in</h3>
+                    <p>We use only Java 17 and the standard library for the book's examples and checks. That makes the calculations easy to inspect without a machine-learning or test framework; portability still depends on a compatible JDK.</p>
+
+                    <h3>Deployment Simplicity</h3>
+                    <p>The examples compile to ordinary Java class files and can be packaged into a JAR. They need a Java 17-compatible runtime, not Python, native ML libraries, or a GPU. Platform-specific runtimes and deployment formats are outside this book's scope.</p>
+
+                    <h3>Team Adoption</h3>
+                    <p>Your Java team already knows the language, the build tools, the debugger, the profiler. They can read, review, and extend this code <em>today</em>—no context switching to Python notebooks.</p>
+                </section>
+
+                <section id="the-jvm-advantage">
+                    <h2>The JVM Advantage</h2>
+
+                    <p>Java's runtime is useful for an inspectable learning project. It is not automatically faster or slower than other approaches: performance depends on the workload, implementation, and hardware. We will measure behavior rather than promise speedups.</p>
+
+                    <h3>Just-In-Time (JIT) Compilation</h3>
+                    <p>A JVM can compile frequently executed methods to machine code and optimize loops at runtime. There is no fixed iteration at which that happens, and warm-up, allocation, and garbage collection can affect timing. The book keeps the arithmetic explicit so you can trace it before trying to optimize it.</p>
+
+                    <h3>Memory and Data Layout</h3>
+                    <p>Our <code>Vector</code> and <code>Matrix</code> classes copy their input arrays and return new values from operations. This makes the public math API predictable, but may allocate intermediate arrays. Escape analysis can sometimes eliminate allocations; it is not a guarantee that an object is stack-allocated or as fast as in-place array operations. Profile a real workload before changing the design.</p>
+
+                    <h3>Tooling</h3>
+                    <ul>
+                        <li><strong>Debugging:</strong> Step through loops and inspect values and dimensions in a Java debugger.</li>
+                        <li><strong>Checks:</strong> Run each chapter's <code>main</code>-based checks with <code>java</code>; failed checks throw <code>AssertionError</code> without requiring <code>-ea</code>.</li>
+                        <li><strong>Profiling:</strong> JDK tools such as Java Flight Recorder can help investigate a measured bottleneck; recording has a cost.</li>
+                    </ul>
+                </section>
+
+                <section id="project-setup">
+                    <h2>Project Setup</h2>
+
+                    <p>Install a JDK 17 (or newer JDK that supports Java 17 source) and check <code>javac -version</code> and <code>java -version</code>. Start with just the JDK: Maven is optional. Work from a new <code>neural-networks-java</code> directory; the source paths below are relative to it.</p>
+
+                    <h3>Directory Structure</h3>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">Starting layout</span></div>
+                        <pre><code class="language-text">neural-networks-java/
+└── src/
+    └── main/
+        └── java/
+            └── com/
+                └── neuralscratch/
+                    └── examples/
+                        └── Chapter1Demo.java</code></pre>
+                    </div>
+                    <p>Create these directories as you add files. Chapter 2 adds <code>math</code> under <code>src/main/java/com/neuralscratch/</code> and <code>MathChecks.java</code> under <code>src/test/java/com/neuralscratch/math/</code>. Later chapters add <code>activation</code>, <code>nn</code>, <code>loss</code>, <code>training</code>, <code>data</code>, <code>evaluation</code>, and <code>demo</code> packages. Follow the path shown above each source listing; there is no separate downloadable source tree required.</p>
+
+                    <h3>One Complete First Program</h3>
+                    <p>Save this file at the indicated path. It computes the weighted sum from the first section, then applies Sigmoid. Later chapters replace the inline arithmetic with reusable classes.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/examples/Chapter1Demo.java</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-java">package com.neuralscratch.examples;
+
+import java.util.Locale;
+
+public final class Chapter1Demo {
+    private Chapter1Demo() {
+    }
+
+    public static void main(String[] args) {
+        double[] inputs = {1.0, 1.0};
+        double[] weights = {0.8, 1.5};
+        double bias = -1.0;
+        double z = bias;
+        for (int index = 0; index &lt; inputs.length; index++) {
+            z += weights[index] * inputs[index];
+        }
+        double output = 1.0 / (1.0 + Math.exp(-z));
+        System.out.printf(Locale.ROOT, "z = %.1f, sigmoid(z) = %.4f%n", z, output);
+    }
+}</code></pre>
+                    </div>
+
+                    <h3>Maven Configuration (Optional)</h3>
+                    <p>If you prefer Maven, put this <code>pom.xml</code> at the project root. It specifies Java 17 and adds no runtime or test dependencies. Maven may download its own build plugins; the JDK-only path does not need Maven at all. The checks in the book are ordinary Java programs, not JUnit tests.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">pom.xml</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"&gt;
+    &lt;modelVersion&gt;4.0.0&lt;/modelVersion&gt;
+    &lt;groupId&gt;com.neuralscratch&lt;/groupId&gt;
+    &lt;artifactId&gt;neural-networks-java&lt;/artifactId&gt;
+    &lt;version&gt;1.0.0-SNAPSHOT&lt;/version&gt;
+    &lt;properties&gt;
+        &lt;project.build.sourceEncoding&gt;UTF-8&lt;/project.build.sourceEncoding&gt;
+    &lt;/properties&gt;
+    &lt;build&gt;
+        &lt;plugins&gt;
+            &lt;plugin&gt;
+                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+                &lt;version&gt;3.12.1&lt;/version&gt;
+                &lt;configuration&gt;
+                    &lt;release&gt;17&lt;/release&gt;
+                &lt;/configuration&gt;
+            &lt;/plugin&gt;
+        &lt;/plugins&gt;
+    &lt;/build&gt;
+&lt;/project&gt;</code></pre>
+                    </div>
+                    <p>There is no <code>module-info.java</code> in this setup. Modules are optional; if you decide to add one later, export only packages that already contain source files. None of the examples needs SLF4J or a <code>requires</code> directive.</p>
+                </section>
+
+                <section id="development-workflow">
+                    <h2>Development Workflow</h2>
+
+                    <h3>Compile and Run with the JDK</h3>
+                    <p>From the project root, create <code>out</code> and run the complete Chapter 1 program. These commands work in PowerShell; <code>mkdir -p out</code> can replace the first command in a macOS/Linux shell.</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (project root)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">New-Item -ItemType Directory -Force out | Out-Null
+javac -d out src/main/java/com/neuralscratch/examples/Chapter1Demo.java
+java -cp out com.neuralscratch.examples.Chapter1Demo</code></pre>
+                    </div>
+                    <p>Expected output: <code>z = 1.3, sigmoid(z) = 0.7858</code>. In Chapter 2, compile its three math files and <code>MathChecks.java</code> into the same <code>out</code> directory and run <code>java -cp out com.neuralscratch.math.MathChecks</code>. No test runner or <code>-ea</code> flag is needed. When you have copied more chapters, the following PowerShell commands compile all the Java files and run the Chapter 2 checks:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">PowerShell (project root, after Chapter 2)</span><button class="copy-btn" type="button">Copy</button></div>
+                        <pre><code class="language-powershell">javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
+java -cp out com.neuralscratch.math.MathChecks</code></pre>
+                    </div>
+                    <p>On macOS/Linux, use <code>javac -d out $(find src -name "*.java")</code> after creating <code>out</code>. Each later chapter gives the class name of its own check program. If you chose Maven, run <code>mvn compile</code> followed by <code>java -cp target/classes com.neuralscratch.examples.Chapter1Demo</code>. For a JAR, <code>mvn package</code> and then <code>java -cp target/neural-networks-java-1.0.0-SNAPSHOT.jar com.neuralscratch.examples.Chapter1Demo</code>; the optional POM does not set a main class in its manifest. <code>mvn test</code> does not run the book's <code>main</code>-based checks.</p>
+
+                    <h3>Debugging Tips</h3>
+                    <ul>
+                        <li><strong>Breakpoints:</strong> Stop inside a loop and inspect the current inputs, weights, and sum.</li>
+                        <li><strong>Shapes:</strong> From Chapter 2 onward, check matrix row and column counts before investigating individual values.</li>
+                        <li><strong>Checks:</strong> Re-run the relevant chapter's check class after changing a loop or derivative.</li>
+                    </ul>
+                </section>
+
+                <section id="code-conventions">
+                    <h2>Code Conventions &amp; Design Philosophy</h2>
+
+                    <p>Throughout this book, we'll keep the calculations small enough to trace by hand and the Java code close to the equations.</p>
+
+                    <h3>Immutability Where Practical</h3>
+                    <p>Chapter 2's <code>Vector</code> and <code>Matrix</code> copy incoming arrays, do not expose their storage, and return new values from arithmetic. For example, after you have added those classes, this code uses their real constructors and methods:</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">After Chapter 2 (in a Java class importing Matrix and Vector)</span></div>
+                        <pre><code class="language-java">Matrix inputs = Matrix.of(new double[][] {{2, 3}});
+Matrix weights = Matrix.of(new double[][] {{1, 0}, {4, 5}});
+Vector biases = new Vector(new double[] {1, -1});
+Matrix result = inputs.multiply(weights).addRowVector(biases);</code></pre>
+                    </div>
+                    <p>The result is a <code>1 × 2</code> matrix containing <code>[15, 14]</code>. The layer in Chapter 4 uses the same row-major rule: weight rows correspond to input features, columns to output neurons.</p>
+
+                    <h3>Controlled Mutability for Training</h3>
+                    <p><code>DenseLayer</code> in Chapter 4 holds the current weights and biases and replaces them when applying gradients. The math values it holds remain immutable from callers' point of view. We do not assume this eliminates allocation or makes training fast; profile before optimizing.</p>
+
+                    <h3>Descriptive Names Where They Help</h3>
+                    <p>Use names such as <code>learningRate</code>, <code>weights</code>, and <code>biases</code> in Java. Short symbols like <code>x</code>, <code>W</code>, and <code>δ</code> remain useful in equations; a loop index can be short when its role is clear.</p>
+
+                    <h3>Interfaces for Pluggability</h3>
+                    <p>Chapter 3 defines <code>Activation</code> with <code>apply(double z)</code> and <code>derivative(double z)</code>. Chapter 5 defines <code>OutputObjective</code> with a loss and an output delta. Both have <em>two abstract methods</em>, so neither is a <code>@FunctionalInterface</code>; each is implemented by a named class. For a single-method Java SE function, Chapter 2 uses <code>DoubleUnaryOperator</code> (for instance <code>activation::apply</code>).</p>
+                    <div class="code-block">
+                        <div class="code-header"><span class="code-lang">src/main/java/com/neuralscratch/activation/Activation.java (Chapter 3)</span></div>
+                        <pre><code class="language-java">package com.neuralscratch.activation;
+
+public interface Activation {
+    double apply(double z);
+    double derivative(double z);
+}</code></pre>
+                    </div>
+
+                    <h3>Records for Data Carriers</h3>
+                    <p>Chapter 7's <code>Dataset</code> is a Java 17 record holding input and target matrices. Its constructor validates that they have the same positive row count; it also supplies <code>select</code> for making batches. No separate <code>Batch</code>, <code>Gradients</code>, or <code>TrainingMetrics</code> type is needed.</p>
+                </section>
+
+                <section id="what-comes-next">
+                    <h2>What Comes Next</h2>
+
+                    <p>In <a href="chapter2.html">Chapter 2</a>, we'll build <code>Vector</code>, <code>Matrix</code>, and a finite-difference <code>Calculus</code> utility for checking slopes. It does <em>not</em> implement automatic differentiation. <a href="chapter3.html">Chapter 3</a> builds a neuron, <a href="chapter4.html">Chapter 4</a> stacks layers, and <a href="chapter5.html">Chapter 5</a> derives and checks backpropagation.</p>
+
+                    <p><a href="chapter6.html">Chapter 6</a> adds ReLU and softmax cross-entropy; <a href="chapter7.html">Chapter 7</a> adds shuffled mini-batch training; and <a href="chapter8.html">Chapter 8</a> evaluates XOR and reads local MNIST IDX files. Each chapter includes code and executable Java SE checks; MNIST data must be supplied separately.</p>
+
+                    <div class="callout callout-tip">
+                        <div class="callout-title">Before You Continue</div>
+                        <ul>
+                            <li>Run <code>Chapter1Demo</code> with the JDK commands above.</li>
+                            <li>Keep a scratchpad for derivatives, dimensions, and indices.</li>
+                            <li>In Chapter 2, copy the math files and run <code>MathChecks</code> before building a neuron.</li>
+                        </ul>
+                    </div>
+                </section>
+
+                <nav class="chapter-nav">
+                    <a href="toc.html" class="btn btn-secondary">← Table of Contents</a>
+                    <a href="chapter2.html" class="btn btn-primary">Next: Chapter 2 – The Math Blueprint →</a>
+                </nav>
+            </article>
+        </div>
+
+        <footer class="book-footer">
+            <p>Neural Networks from Scratch in Pure Java — Chapter 1</p>
+            <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">
+                Pure Java SE • No external dependencies • Built for understanding
+            </p>
+        </footer>
+    </main>
+
+    <script src="../js/main.js"></script>
+</body>
+</html>
