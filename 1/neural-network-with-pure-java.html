@@ -23,6 +23,33 @@
             --border: #293552;
             --code-background: #080d18;
             --warning: #ffd166;
+            --header-start: #101a35;
+            --header-end: #0b1020;
+            --nav-background: rgba(11, 16, 32, .92);
+            --inline-code: #18213a;
+            --math-background: #10172a;
+            --heading: #cfe2ff;
+            --code-text: #dce7ff;
+        }
+
+        :root[data-theme="light"] {
+            --background: #f7f9fc;
+            --surface: #ffffff;
+            --surface-light: #e8eef7;
+            --text: #1b2738;
+            --muted: #526174;
+            --primary: #006fc9;
+            --secondary: #087956;
+            --border: #c8d3e2;
+            --code-background: #ffffff;
+            --warning: #9b5d00;
+            --header-start: #e5f1ff;
+            --header-end: #f7f9fc;
+            --nav-background: rgba(247, 249, 252, .92);
+            --inline-code: #ffffff;
+            --math-background: #eef4fb;
+            --heading: #173f68;
+            --code-text: #172033;
         }
 
         * {
@@ -63,8 +90,8 @@ padding-left: 20px
             background:
                 linear-gradient(
                     135deg,
-                    #101a35,
-                    #0b1020 65%
+                    var(--header-start),
+                    var(--header-end) 65%
                 );
             border-bottom: 1px solid var(--border);
         }
@@ -85,7 +112,7 @@ padding-left: 20px
         h3 {
             font-size: 1.45rem;
             margin-top: 2.2rem;
-            color: #cfe2ff;
+            color: var(--heading);
         }
 
         h4 {
@@ -118,7 +145,7 @@ padding-left: 20px
             top: 0;
             z-index: 100;
             backdrop-filter: blur(12px);
-            background: rgba(11, 16, 32, .92);
+            background: var(--nav-background);
             border-bottom: 1px solid var(--border);
         }
 
@@ -127,6 +154,25 @@ padding-left: 20px
             gap: 18px;
             overflow-x: auto;
             padding: 12px 0;
+        }
+
+        .theme-toggle {
+            margin-left: auto;
+            padding: 6px 11px;
+            color: var(--text);
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font: inherit;
+            font-size: .88rem;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+
+        .theme-toggle:hover,
+        .theme-toggle:focus-visible {
+            color: var(--primary);
+            border-color: var(--primary);
         }
 
         nav a {
@@ -174,9 +220,10 @@ width: 80%;
 
         code {
             padding: 2px 5px;
-            background: #18213a;
+            background: var(--inline-code);
             border-radius: 4px;
-font-size: 1.0rem;
+            color: var(--code-text);
+font-size: calc(1rem + 2px);
         }
 
         pre {
@@ -185,9 +232,9 @@ font-size: 1.0rem;
             background: var(--code-background);
             border: 1px solid var(--border);
             border-radius: 10px;
-            color: #dce7ff;
+            color: var(--code-text);
             line-height: 1.5;
-            font-size: 1.2rem;
+            font-size: calc(1.2rem + 2px);
         }
 
         pre code {
@@ -198,7 +245,7 @@ font-size: 1.0rem;
         .math {
             padding: 14px 18px;
             overflow-x: auto;
-            background: #10172a;
+            background: var(--math-background);
             border: 1px solid var(--border);
             border-radius: 8px;
             font-family: "Cambria Math", Georgia, serif;
@@ -291,6 +338,9 @@ font-size: 1.0rem;
         <a href="#chapter6">Chapter 6</a>
         <a href="#chapter7">Chapter 7</a>
         <a href="#chapter8">Chapter 8</a>
+        <button class="theme-toggle" type="button" aria-pressed="false">
+            Light theme
+        </button>
     </div>
 </nav>
 
@@ -525,16 +575,11 @@ PyTorch, or external linear-algebra package.
 </p>
 
 <pre><code>for (int row = 0; row &lt; rows; row++) {
-
     for (int column = 0; column &lt; columns; column++) {
-
         double sum = 0.0;
-
         for (int k = 0; k &lt; commonDimension; k++) {
-
             sum += left[row][k] * right[k][column];
         }
-
         result[row][column] = sum;
     }
 }</code></pre>
@@ -549,39 +594,27 @@ PyTorch, or external linear-algebra package.
     We can organize the project as follows:
 </p>
 
-<pre><code>neural-networks-java/
-│
-├── src/
-│   └── main/
-│       └── java/
-│           └── nn/
-│
+<pre><code>neural-networks-java/ │
+├── src/ │   └── main/ │       └── java/ │           └── nn/ │
 │               ├── Main.java
 │
-│               ├── math/
-│               │   ├── Vector.java
+│               ├── math/ │               │   ├── Vector.java
 │               │   └── Matrix.java
 │
-│               ├── activation/
-│               │   ├── Sigmoid.java
+│               ├── activation/ │               │   ├── Sigmoid.java
 │               │   ├── ReLU.java
 │               │   └── Softmax.java
 │
-│               ├── loss/
-│               │   ├── MeanSquaredError.java
+│               ├── loss/ │               │   ├── MeanSquaredError.java
 │               │   └── CrossEntropy.java
 │
-│               ├── layer/
-│               │   └── DenseLayer.java
+│               ├── layer/ │               │   └── DenseLayer.java
 │
-│               ├── network/
-│               │   └── NeuralNetwork.java
+│               ├── network/ │               │   └── NeuralNetwork.java
 │
-│               ├── training/
-│               │   └── Trainer.java
+│               ├── training/ │               │   └── Trainer.java
 │
-│               └── data/
-│                   └── MnistReader.java
+│               └── data/ │                   └── MnistReader.java
 │
 └── data/</code></pre>
 
@@ -617,18 +650,13 @@ Training code should know optimization.
 <h3>1.7 Creating the First Java Program</h3>
 
 <pre><code>package nn;
-
 public class Main {
-
     public static void main(String[] args) {
-
         System.out.println(
             "Neural Networks from Scratch in Pure Java"
         );
-
         System.out.println(
-            "Java version: "
-            + System.getProperty("java.version")
+            "Java version: " + System.getProperty("java.version")
         );
     }
 }</code></pre>
@@ -794,11 +822,8 @@ double temperature = 3.2;</code></pre>
 </p>
 
 <pre><code>double[][] matrix = {
-
     { 1.0, 2.0 },
-
     { 3.0, 4.0 },
-
     { 5.0, 6.0 }
 };</code></pre>
 
@@ -833,23 +858,14 @@ double temperature = 3.2;</code></pre>
     In Java:
 </p>
 
-<pre><code>public static double dot(
-        double[] a,
-        double[] b) {
-
+<pre><code>public static double dot( double[] a, double[] b) {
     if (a.length != b.length) {
-        throw new IllegalArgumentException(
-            "Vector sizes must match"
-        );
+        throw new IllegalArgumentException("Vector sizes must match");
     }
-
     double sum = 0.0;
-
     for (int i = 0; i &lt; a.length; i++) {
-
         sum += a[i] * b[i];
     }
-
     return sum;
 }</code></pre>
 
@@ -860,136 +876,82 @@ double temperature = 3.2;</code></pre>
 import java.util.Arrays;
 
 public final class Vector {
-
     private final double[] values;
-
     public Vector(int size) {
-
         if (size &lt;= 0) {
-            throw new IllegalArgumentException(
-                "Vector size must be positive"
-            );
+            throw new IllegalArgumentException("Vector size must be positive");
         }
-
         this.values = new double[size];
     }
 
     public Vector(double[] values) {
-
         if (values == null || values.length == 0) {
-            throw new IllegalArgumentException(
-                "Vector cannot be empty"
-            );
+            throw new IllegalArgumentException("Vector cannot be empty");
         }
-
         this.values = values.clone();
     }
 
     public int size() {
-
         return values.length;
     }
 
     public double get(int index) {
-
         return values[index];
     }
 
-    public void set(
-            int index,
-            double value) {
-
+    public void set( int index, double value) {
         values[index] = value;
     }
 
     public double[] toArray() {
-
         return values.clone();
     }
 
     public double dot(Vector other) {
-
         if (size() != other.size()) {
-
-            throw new IllegalArgumentException(
-                "Vector sizes must match"
-            );
+            throw new IllegalArgumentException("Vector sizes must match");
         }
-
         double sum = 0.0;
-
         for (int i = 0; i &lt; size(); i++) {
-
-            sum +=
-                values[i]
-                * other.values[i];
+            sum += values[i] * other.values[i];
         }
-
         return sum;
     }
 
     public Vector add(Vector other) {
-
         checkSameSize(other);
-
-        double[] result =
-            new double[size()];
-
+        double[] result = new double[size()];
         for (int i = 0; i &lt; size(); i++) {
-
-            result[i] =
-                values[i]
-                + other.values[i];
+            result[i] = values[i] + other.values[i];
         }
-
         return new Vector(result);
     }
 
     public Vector subtract(Vector other) {
-
         checkSameSize(other);
-
-        double[] result =
-            new double[size()];
-
+        double[] result = new double[size()];
         for (int i = 0; i &lt; size(); i++) {
-
-            result[i] =
-                values[i]
-                - other.values[i];
+            result[i] = values[i] - other.values[i];
         }
-
         return new Vector(result);
     }
 
     public Vector multiply(double scalar) {
-
-        double[] result =
-            new double[size()];
-
+        double[] result = new double[size()];
         for (int i = 0; i &lt; size(); i++) {
-
-            result[i] =
-                values[i] * scalar;
+            result[i] = values[i] * scalar;
         }
-
         return new Vector(result);
     }
 
-    private void checkSameSize(
-            Vector other) {
-
+    private void checkSameSize( Vector other) {
         if (size() != other.size()) {
-
-            throw new IllegalArgumentException(
-                "Vector sizes must match"
-            );
+            throw new IllegalArgumentException("Vector sizes must match");
         }
     }
 
     @Override
     public String toString() {
-
         return Arrays.toString(values);
     }
 }</code></pre>
@@ -1035,49 +997,24 @@ public final class Vector {
 
 <h3>2.7 Matrix Multiplication in Java</h3>
 
-<pre><code>public static double[][] multiply(
-        double[][] a,
-        double[][] b) {
-
+<pre><code>public static double[][] multiply( double[][] a, double[][] b) {
     int aRows = a.length;
     int aColumns = a[0].length;
-
     int bRows = b.length;
     int bColumns = b[0].length;
-
     if (aColumns != bRows) {
-
-        throw new IllegalArgumentException(
-            "Incompatible matrix dimensions"
-        );
+        throw new IllegalArgumentException("Incompatible matrix dimensions");
     }
-
-    double[][] result =
-        new double[aRows][bColumns];
-
-    for (int row = 0;
-         row &lt; aRows;
-         row++) {
-
-        for (int column = 0;
-             column &lt; bColumns;
-             column++) {
-
+    double[][] result = new double[aRows][bColumns];
+    for (int row = 0; row &lt; aRows; row++) {
+        for (int column = 0; column &lt; bColumns; column++) {
             double sum = 0.0;
-
-            for (int k = 0;
-                 k &lt; aColumns;
-                 k++) {
-
-                sum +=
-                    a[row][k]
-                    * b[k][column];
+            for (int k = 0; k &lt; aColumns; k++) {
+                sum += a[row][k] * b[k][column];
             }
-
             result[row][column] = sum;
         }
     }
-
     return result;
 }</code></pre>
 
@@ -1116,28 +1053,15 @@ public final class Vector {
     Java implementation:
 </p>
 
-<pre><code>public static double[][] transpose(
-        double[][] matrix) {
-
+<pre><code>public static double[][] transpose( double[][] matrix) {
     int rows = matrix.length;
     int columns = matrix[0].length;
-
-    double[][] result =
-        new double[columns][rows];
-
-    for (int row = 0;
-         row &lt; rows;
-         row++) {
-
-        for (int column = 0;
-             column &lt; columns;
-             column++) {
-
-            result[column][row] =
-                matrix[row][column];
+    double[][] result = new double[columns][rows];
+    for (int row = 0; row &lt; rows; row++) {
+        for (int column = 0; column &lt; columns; column++) {
+            result[column][row] = matrix[row][column];
         }
     }
-
     return result;
 }</code></pre>
 
@@ -1148,53 +1072,27 @@ public final class Vector {
 import java.util.Random;
 
 public final class Matrix {
-
     private final double[][] values;
-
-    public Matrix(
-            int rows,
-            int columns) {
-
+    public Matrix(int rows, int columns) {
         if (rows &lt;= 0 ||
             columns &lt;= 0) {
-
-            throw new IllegalArgumentException(
-                "Matrix dimensions must be positive"
-            );
+            throw new IllegalArgumentException("Matrix dimensions must be positive");
         }
-
-        values =
-            new double[rows][columns];
+        values = new double[rows][columns];
     }
 
     public Matrix(double[][] source) {
-
         if (source == null ||
             source.length == 0 ||
             source[0].length == 0) {
-
-            throw new IllegalArgumentException(
-                "Matrix cannot be empty"
-            );
+            throw new IllegalArgumentException("Matrix cannot be empty");
         }
-
-        int columns =
-            source[0].length;
-
-        values =
-            new double[source.length][columns];
-
-        for (int row = 0;
-             row &lt; source.length;
-             row++) {
-
+        int columns = source[0].length;
+        values = new double[source.length][columns];
+        for (int row = 0; row &lt; source.length; row++) {
             if (source[row].length != columns) {
-
-                throw new IllegalArgumentException(
-                    "Rows must have equal length"
-                );
+                throw new IllegalArgumentException("Rows must have equal length");
             }
-
             System.arraycopy(
                 source[row],
                 0,
@@ -1205,109 +1103,54 @@ public final class Matrix {
         }
     }
 
-    public static Matrix random(
-            int rows,
-            int columns,
-            Random random,
-            double scale) {
-
-        Matrix result =
-            new Matrix(rows, columns);
-
-        for (int row = 0;
-             row &lt; rows;
-             row++) {
-
-            for (int column = 0;
-                 column &lt; columns;
-                 column++) {
-
-                result.values[row][column] =
-                    (random.nextDouble() * 2.0 - 1.0)
-                    * scale;
+    public static Matrix random( int rows, int columns, Random random, double scale) {
+        Matrix result = new Matrix(rows, columns);
+        for (int row = 0; row &lt; rows; row++) {
+            for (int column = 0; column &lt; columns; column++) {
+                result.values[row][column] = (random.nextDouble() * 2.0 - 1.0) * scale;
             }
         }
-
         return result;
     }
 
     public int rows() {
-
         return values.length;
     }
 
     public int columns() {
-
         return values[0].length;
     }
 
-    public double get(
-            int row,
-            int column) {
-
+    public double get( int row, int column) {
         return values[row][column];
     }
 
-    public void set(
-            int row,
-            int column,
-            double value) {
-
+    public void set( int row, int column, double value) {
         values[row][column] = value;
     }
 
-    public Vector multiply(
-            Vector vector) {
-
+    public Vector multiply( Vector vector) {
         if (columns() != vector.size()) {
-
-            throw new IllegalArgumentException(
-                "Matrix/vector dimensions do not match"
-            );
+            throw new IllegalArgumentException("Matrix/vector dimensions do not match");
         }
-
-        double[] result =
-            new double[rows()];
-
-        for (int row = 0;
-             row &lt; rows();
-             row++) {
-
+        double[] result = new double[rows()];
+        for (int row = 0; row &lt; rows(); row++) {
             double sum = 0.0;
-
-            for (int column = 0;
-                 column &lt; columns();
-                 column++) {
-
-                sum +=
-                    values[row][column]
-                    * vector.get(column);
+            for (int column = 0; column &lt; columns(); column++) {
+                sum += values[row][column] * vector.get(column);
             }
-
             result[row] = sum;
         }
-
         return new Vector(result);
     }
 
     public Matrix transpose() {
-
-        Matrix result =
-            new Matrix(columns(), rows());
-
-        for (int row = 0;
-             row &lt; rows();
-             row++) {
-
-            for (int column = 0;
-                 column &lt; columns();
-                 column++) {
-
-                result.values[column][row] =
-                    values[row][column];
+        Matrix result = new Matrix(columns(), rows());
+        for (int row = 0; row &lt; rows(); row++) {
+            for (int column = 0; column &lt; columns(); column++) {
+                result.values[column][row] = values[row][column];
             }
         }
-
         return result;
     }
 }</code></pre>
@@ -1573,17 +1416,12 @@ Absolutely — here is **Part 2**, continuing the same HTML document. Append thi
 </p>
 
 <pre><code>package nn.activation;
-
 public final class StepActivation {
-
     private StepActivation() {
     }
 
     public static double activate(double value) {
-
-        return value &gt;= 0.0
-                ? 1.0
-                : 0.0;
+        return value &gt;= 0.0 ? 1.0 : 0.0;
     }
 }</code></pre>
 
@@ -1594,45 +1432,24 @@ public final class StepActivation {
 import nn.activation.StepActivation;
 
 public final class Perceptron {
-
     private final double[] weights;
-
     private double bias;
-
-    public Perceptron(
-            int inputCount) {
-
+    public Perceptron(int inputCount) {
         if (inputCount &lt;= 0) {
-            throw new IllegalArgumentException(
-                "Input count must be positive"
-            );
+            throw new IllegalArgumentException("Input count must be positive");
         }
-
-        this.weights =
-            new double[inputCount];
-
+        this.weights = new double[inputCount];
         this.bias = 0.0;
     }
 
-    public double predict(
-            double[] input) {
-
+    public double predict( double[] input) {
         if (input.length != weights.length) {
-            throw new IllegalArgumentException(
-                "Input size does not match weights"
-            );
+            throw new IllegalArgumentException("Input size does not match weights");
         }
-
         double weightedSum = bias;
-
-        for (int i = 0;
-             i &lt; input.length;
-             i++) {
-
-            weightedSum +=
-                input[i] * weights[i];
+        for (int i = 0; i &lt; input.length; i++) {
+            weightedSum += input[i] * weights[i];
         }
-
         return StepActivation.activate(
             weightedSum
         );
@@ -1761,25 +1578,16 @@ public final class Perceptron {
 </p>
 
 <pre><code>package nn.activation;
-
 public final class Sigmoid {
-
     private Sigmoid() {
     }
 
-    public static double activate(
-            double value) {
-
-        return 1.0 /
-            (1.0 + Math.exp(-value));
+    public static double activate( double value) {
+        return 1.0 / (1.0 + Math.exp(-value));
     }
 
-    public static double derivative(
-            double value) {
-
-        double output =
-            activate(value);
-
+    public static double derivative( double value) {
+        double output = activate(value);
         return output * (1.0 - output);
     }
 }</code></pre>
@@ -1802,50 +1610,25 @@ public final class Sigmoid {
 <pre><code>package nn.network;
 
 import nn.activation.Sigmoid;
-
 import java.util.Random;
 
 public final class SigmoidNeuron {
-
     private final double[] weights;
-
     private double bias;
-
-    public SigmoidNeuron(
-            int inputCount,
-            Random random) {
-
-        this.weights =
-            new double[inputCount];
-
-        double scale =
-            1.0 / Math.sqrt(inputCount);
-
-        for (int i = 0;
-             i &lt; inputCount;
-             i++) {
-
-            weights[i] =
-                (random.nextDouble() * 2.0 - 1.0)
-                * scale;
+    public SigmoidNeuron(int inputCount, Random random) {
+        this.weights = new double[inputCount];
+        double scale = 1.0 / Math.sqrt(inputCount);
+        for (int i = 0; i &lt; inputCount; i++) {
+            weights[i] = (random.nextDouble() * 2.0 - 1.0) * scale;
         }
-
         bias = 0.0;
     }
 
-    public double forward(
-            double[] input) {
-
+    public double forward( double[] input) {
         double weightedSum = bias;
-
-        for (int i = 0;
-             i &lt; weights.length;
-             i++) {
-
-            weightedSum +=
-                input[i] * weights[i];
+        for (int i = 0; i &lt; weights.length; i++) {
+            weightedSum += input[i] * weights[i];
         }
-
         return Sigmoid.activate(
             weightedSum
         );
@@ -1961,80 +1744,43 @@ weighted sum → bias → activation
 
 import nn.math.Matrix;
 import nn.math.Vector;
-
 import java.util.Random;
 
 public final class DenseLayer {
-
     private final Matrix weights;
-
     private final Vector biases;
-
     private Vector lastInput;
-
     private Vector lastPreActivation;
-
-    public DenseLayer(
-            int inputCount,
-            int outputCount,
-            Random random) {
-
-        double scale =
-            Math.sqrt(2.0 / inputCount);
-
-        this.weights =
-            Matrix.random(
+    public DenseLayer(int inputCount, int outputCount, Random random) {
+        double scale = Math.sqrt(2.0 / inputCount);
+        this.weights = Matrix.random(
                 outputCount,
                 inputCount,
                 random,
                 scale
             );
-
-        this.biases =
-            new Vector(outputCount);
+        this.biases = new Vector(outputCount);
     }
 
-    public Vector forward(
-            Vector input) {
-
-        if (input.size() !=
-            weights.columns()) {
-
-            throw new IllegalArgumentException(
-                "Input dimension mismatch"
-            );
+    public Vector forward( Vector input) {
+        if (input.size() != weights.columns()) {
+            throw new IllegalArgumentException("Input dimension mismatch");
         }
-
         lastInput = input;
-
-        Vector weighted =
-            weights.multiply(input);
-
-        double[] result =
-            new double[weighted.size()];
-
-        for (int i = 0;
-             i &lt; weighted.size();
-             i++) {
-
-            result[i] =
-                weighted.get(i)
-                + biases.get(i);
+        Vector weighted = weights.multiply(input);
+        double[] result = new double[weighted.size()];
+        for (int i = 0; i &lt; weighted.size(); i++) {
+            result[i] = weighted.get(i) + biases.get(i);
         }
-
-        lastPreActivation =
-            new Vector(result);
-
+        lastPreActivation = new Vector(result);
         return lastPreActivation;
     }
 
     public int inputCount() {
-
         return weights.columns();
     }
 
     public int outputCount() {
-
         return weights.rows();
     }
 }</code></pre>
@@ -2070,36 +1816,24 @@ public final class DenseLayer {
 </p>
 
 <pre><code>package nn.activation;
-
 public interface ActivationFunction {
-
     double activate(double value);
-
     double derivative(double value);
 }</code></pre>
 
 <h3>4.5 Sigmoid Activation Object</h3>
 
 <pre><code>package nn.activation;
-
 public final class SigmoidActivation
         implements ActivationFunction {
-
     @Override
-    public double activate(
-            double value) {
-
-        return 1.0 /
-            (1.0 + Math.exp(-value));
+    public double activate( double value) {
+        return 1.0 / (1.0 + Math.exp(-value));
     }
 
     @Override
-    public double derivative(
-            double value) {
-
-        double output =
-            activate(value);
-
+    public double derivative( double value) {
+        double output = activate(value);
         return output * (1.0 - output);
     }
 }</code></pre>
@@ -2112,35 +1846,20 @@ import nn.activation.ActivationFunction;
 import nn.math.Vector;
 
 public final class ActivationLayer {
-
     private final ActivationFunction function;
-
     private Vector lastInput;
-
-    public ActivationLayer(
-            ActivationFunction function) {
-
+    public ActivationLayer(ActivationFunction function) {
         this.function = function;
     }
 
-    public Vector forward(
-            Vector input) {
-
+    public Vector forward( Vector input) {
         lastInput = input;
-
-        double[] result =
-            new double[input.size()];
-
-        for (int i = 0;
-             i &lt; input.size();
-             i++) {
-
-            result[i] =
-                function.activate(
+        double[] result = new double[input.size()];
+        for (int i = 0; i &lt; input.size(); i++) {
+            result[i] = function.activate(
                     input.get(i)
                 );
         }
-
         return new Vector(result);
     }
 }</code></pre>
@@ -2154,40 +1873,26 @@ public final class ActivationLayer {
 <pre><code>package nn.network;
 
 import nn.math.Vector;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public final class NeuralNetwork {
-
-    private final List<Object> layers =
-        new ArrayList<>();
-
+    private final List<Object> layers = new ArrayList<>();
     public void add(Object layer) {
-
         layers.add(layer);
     }
 
     public Vector predict(Vector input) {
-
         Vector current = input;
-
         for (Object layer : layers) {
-
             if (layer instanceof
                     nn.layer.DenseLayer dense) {
-
-                current =
-                    dense.forward(current);
-
+                current = dense.forward(current);
             } else if (layer instanceof
                     nn.layer.ActivationLayer activation) {
-
-                current =
-                    activation.forward(current);
+                current = activation.forward(current);
             }
         }
-
         return current;
     }
 }</code></pre>
@@ -2205,10 +1910,8 @@ public final class NeuralNetwork {
 </p>
 
 <pre><code>Input:      2 values
-
 Hidden:     4 neurons
 Activation: Sigmoid
-
 Output:     1 neuron
 Activation: Sigmoid</code></pre>
 
@@ -2430,76 +2133,40 @@ Answer:
 <pre><code>package nn.network;
 
 import nn.activation.Sigmoid;
-
 import java.util.Random;
 
 public final class TrainableNeuron {
-
     private final double[] weights;
-
     private double bias;
-
-    public TrainableNeuron(
-            int inputCount,
-            Random random) {
-
-        weights =
-            new double[inputCount];
-
-        double scale =
-            1.0 / Math.sqrt(inputCount);
-
-        for (int i = 0;
-             i &lt; inputCount;
-             i++) {
-
-            weights[i] =
-                (random.nextDouble() * 2 - 1)
-                * scale;
+    public TrainableNeuron(int inputCount, Random random) {
+        weights = new double[inputCount];
+        double scale = 1.0 / Math.sqrt(inputCount);
+        for (int i = 0; i &lt; inputCount; i++) {
+            weights[i] = (random.nextDouble() * 2 - 1) * scale;
         }
     }
 
-    public double predict(
-            double[] input) {
-
+    public double predict( double[] input) {
         double z = bias;
-
-        for (int i = 0;
-             i &lt; input.length;
-             i++) {
-
-            z +=
-                input[i] * weights[i];
+        for (int i = 0; i &lt; input.length; i++) {
+            z += input[i] * weights[i];
         }
-
         return Sigmoid.activate(z);
     }
 
-    public void train(
-            double[] input,
-            double target,
-            double learningRate) {
-
+    public void train( double[] input, double target, double learningRate) {
         double z = bias;
-
-        for (int i = 0;
-             i &lt; input.length;
-             i++) {
-
-            z +=
-                input[i] * weights[i];
+        for (int i = 0; i &lt; input.length; i++) {
+            z += input[i] * weights[i];
         }
-
-        double output =
-            Sigmoid.activate(z);
+        double output = Sigmoid.activate(z);
 
         /*
          * Mean squared error derivative:
          *
          * dL/dOutput = output - target
          */
-        double dLossDOutput =
-            output - target;
+        double dLossDOutput = output - target;
 
         /*
          * Sigmoid derivative:
@@ -2507,8 +2174,7 @@ public final class TrainableNeuron {
          * dOutput/dZ =
          * sigmoid(Z) * (1 - sigmoid(Z))
          */
-        double dOutputDZ =
-            output * (1.0 - output);
+        double dOutputDZ = output * (1.0 - output);
 
         /*
          * Chain rule:
@@ -2517,9 +2183,7 @@ public final class TrainableNeuron {
          * dLoss/dOutput *
          * dOutput/dZ
          */
-        double dLossDZ =
-            dLossDOutput
-            * dOutputDZ;
+        double dLossDZ = dLossDOutput * dOutputDZ;
 
         /*
          * dZ/dWeight = input
@@ -2529,22 +2193,15 @@ public final class TrainableNeuron {
          * dLoss/dWeight =
          * dLoss/dZ * input
          */
-        for (int i = 0;
-             i &lt; weights.length;
-             i++) {
-
-            double gradient =
-                dLossDZ * input[i];
-
-            weights[i] -=
-                learningRate * gradient;
+        for (int i = 0; i &lt; weights.length; i++) {
+            double gradient = dLossDZ * input[i];
+            weights[i] -= learningRate * gradient;
         }
 
         /*
          * dZ/dBias = 1
          */
-        bias -=
-            learningRate * dLossDZ;
+        bias -= learningRate * dLossDZ;
     }
 }</code></pre>
 
@@ -2592,68 +2249,42 @@ public final class TrainableNeuron {
 
 <h3>5.7 Dense Layer Backward Pass</h3>
 
-<pre><code>public Vector backward(
-        Vector gradient,
-        double learningRate) {
+<pre><code>public Vector backward( Vector gradient, double learningRate) {
 
     /*
      * gradient represents dL/dZ.
      */
-
-    double[] inputValues =
-        lastInput.toArray();
+    double[] inputValues = lastInput.toArray();
 
     /*
      * Save W^T * gradient before
      * changing W.
      */
-    Vector inputGradient =
-        weights.transpose()
+    Vector inputGradient = weights.transpose()
                .multiply(gradient);
-
-    for (int row = 0;
-         row &lt; weights.rows();
-         row++) {
-
-        double outputGradient =
-            gradient.get(row);
-
-        for (int column = 0;
-             column &lt; weights.columns();
-             column++) {
-
-            double weightGradient =
-                outputGradient
-                * inputValues[column];
+    for (int row = 0; row &lt; weights.rows(); row++) {
+        double outputGradient = gradient.get(row);
+        for (int column = 0; column &lt; weights.columns(); column++) {
+            double weightGradient = outputGradient * inputValues[column];
 
             /*
              * Gradient descent:
              *
              * W = W - learningRate * dL/dW
              */
-            double updatedWeight =
-                weights.get(row, column)
-                - learningRate
-                * weightGradient;
-
+            double updatedWeight = weights.get(row, column) - learningRate * weightGradient;
             weights.set(
                 row,
                 column,
                 updatedWeight
             );
         }
-
-        double updatedBias =
-            biases.get(row)
-            - learningRate
-            * outputGradient;
-
+        double updatedBias = biases.get(row) - learningRate * outputGradient;
         biases.set(
             row,
             updatedBias
         );
     }
-
     return inputGradient;
 }</code></pre>
 
@@ -2704,13 +2335,9 @@ public final class TrainableNeuron {
 <pre><code>static double numericalDerivative(
         java.util.function.DoubleFunction&lt;Double&gt; function,
         double x) {
-
     double epsilon = 1e-5;
-
     return (
-        function.apply(x + epsilon)
-        -
-        function.apply(x - epsilon)
+        function.apply(x + epsilon) - function.apply(x - epsilon)
     ) / (2.0 * epsilon);
 }</code></pre>
 
@@ -2757,24 +2384,16 @@ First verify the gradients.
 </p>
 
 <pre><code>package nn.activation;
-
 public final class ReLU
         implements ActivationFunction {
-
     @Override
-    public double activate(
-            double value) {
-
+    public double activate( double value) {
         return Math.max(0.0, value);
     }
 
     @Override
-    public double derivative(
-            double value) {
-
-        return value &gt; 0.0
-                ? 1.0
-                : 0.0;
+    public double derivative( double value) {
+        return value &gt; 0.0 ? 1.0 : 0.0;
     }
 }</code></pre>
 
@@ -2813,55 +2432,31 @@ public final class ReLU
 </p>
 
 <pre><code>package nn.activation;
-
 public final class Softmax {
-
     private Softmax() {
     }
 
-    public static double[] activate(
-            double[] values) {
-
-        double maximum =
-            Double.NEGATIVE_INFINITY;
-
+    public static double[] activate( double[] values) {
+        double maximum = Double.NEGATIVE_INFINITY;
         for (double value : values) {
-
-            maximum =
-                Math.max(maximum, value);
+            maximum = Math.max(maximum, value);
         }
-
-        double[] exponentials =
-            new double[values.length];
-
+        double[] exponentials = new double[values.length];
         double sum = 0.0;
-
-        for (int i = 0;
-             i &lt; values.length;
-             i++) {
+        for (int i = 0; i &lt; values.length; i++) {
 
             /*
              * Subtracting the maximum does not
              * change the final probability ratio,
              * but greatly improves numerical stability.
              */
-            exponentials[i] =
-                Math.exp(values[i] - maximum);
-
+            exponentials[i] = Math.exp(values[i] - maximum);
             sum += exponentials[i];
         }
-
-        double[] probabilities =
-            new double[values.length];
-
-        for (int i = 0;
-             i &lt; values.length;
-             i++) {
-
-            probabilities[i] =
-                exponentials[i] / sum;
+        double[] probabilities = new double[values.length];
+        for (int i = 0; i &lt; values.length; i++) {
+            probabilities[i] = exponentials[i] / sum;
         }
-
         return probabilities;
     }
 }</code></pre>
@@ -2879,37 +2474,19 @@ public final class Softmax {
 </div>
 
 <pre><code>package nn.loss;
-
 public final class MeanSquaredError {
-
     private MeanSquaredError() {
     }
 
-    public static double calculate(
-            double[] prediction,
-            double[] target) {
-
-        if (prediction.length !=
-            target.length) {
-
-            throw new IllegalArgumentException(
-                "Prediction and target sizes differ"
-            );
+    public static double calculate( double[] prediction, double[] target) {
+        if (prediction.length != target.length) {
+            throw new IllegalArgumentException("Prediction and target sizes differ");
         }
-
         double sum = 0.0;
-
-        for (int i = 0;
-             i &lt; prediction.length;
-             i++) {
-
-            double difference =
-                prediction[i] - target[i];
-
-            sum +=
-                difference * difference;
+        for (int i = 0; i &lt; prediction.length; i++) {
+            double difference = prediction[i] - target[i];
+            sum += difference * difference;
         }
-
         return sum / prediction.length;
     }
 }</code></pre>
@@ -2935,28 +2512,20 @@ public final class MeanSquaredError {
 </p>
 
 <pre><code>package nn.loss;
-
 public final class CrossEntropy {
-
     private CrossEntropy() {
     }
 
-    public static double calculate(
-            double[] probabilities,
-            int correctClass) {
-
-        double probability =
-            probabilities[correctClass];
+    public static double calculate( double[] probabilities, int correctClass) {
+        double probability = probabilities[correctClass];
 
         /*
          * Avoid log(0).
          */
-        probability =
-            Math.max(
+        probability = Math.max(
                 probability,
                 1e-15
             );
-
         return -Math.log(probability);
     }
 }</code></pre>
@@ -3101,26 +2670,18 @@ public final class CrossEntropy {
 <h3>7.3 Training Data Representation</h3>
 
 <pre><code>public final class TrainingExample {
-
     private final double[] input;
-
     private final double[] target;
-
-    public TrainingExample(
-            double[] input,
-            double[] target) {
-
+    public TrainingExample(double[] input, double[] target) {
         this.input = input.clone();
         this.target = target.clone();
     }
 
     public double[] input() {
-
         return input.clone();
     }
 
     public double[] target() {
-
         return target.clone();
     }
 }</code></pre>
@@ -3143,41 +2704,28 @@ public final class CrossEntropy {
 
 <h3>7.5 A Basic Training Loop</h3>
 
-<pre><code>for (int epoch = 0;
-     epoch &lt; epochs;
-     epoch++) {
-
+<pre><code>for (int epoch = 0; epoch &lt; epochs; epoch++) {
     java.util.Collections.shuffle(
         trainingExamples,
         random
     );
-
     double totalLoss = 0.0;
-
-    for (TrainingExample example :
-            trainingExamples) {
-
-        Vector input =
-            new Vector(example.input());
-
-        Vector target =
-            new Vector(example.target());
+    for (TrainingExample example  : trainingExamples) {
+        Vector input = new Vector(example.input());
+        Vector target = new Vector(example.target());
 
         /*
          * Forward pass.
          */
-        Vector prediction =
-            network.predict(input);
+        Vector prediction = network.predict(input);
 
         /*
          * Calculate loss.
          */
-        double loss =
-            calculateLoss(
+        double loss = calculateLoss(
                 prediction,
                 target
             );
-
         totalLoss += loss;
 
         /*
@@ -3191,11 +2739,7 @@ public final class CrossEntropy {
             learningRate
         );
     }
-
-    double averageLoss =
-        totalLoss
-        / trainingExamples.size();
-
+    double averageLoss = totalLoss / trainingExamples.size();
     System.out.printf(
         "Epoch %d - Loss: %.6f%n",
         epoch + 1,
@@ -3287,8 +2831,7 @@ Epoch 4   Loss=0.3918   Accuracy=82.1%</code></pre>
     Always consider using a fixed random seed while developing:
 </p>
 
-<pre><code>Random random =
-    new Random(42);</code></pre>
+<pre><code>Random random = new Random(42);</code></pre>
 
 <p>
     This makes experiments repeatable.
@@ -3396,63 +2939,29 @@ prediction</code></pre>
 
 <h3>8.3 XOR Dataset</h3>
 
-<pre><code>List&lt;TrainingExample&gt; xor =
-    List.of(
-
-        new TrainingExample(
-            new double[] {0, 0},
-            new double[] {0}
-        ),
-
-        new TrainingExample(
-            new double[] {0, 1},
-            new double[] {1}
-        ),
-
-        new TrainingExample(
-            new double[] {1, 0},
-            new double[] {1}
-        ),
-
-        new TrainingExample(
-            new double[] {1, 1},
-            new double[] {0}
-        )
+<pre><code>List&lt;TrainingExample&gt; xor = List.of(
+        new TrainingExample(new double[] {0, 0}, new double[] {0}),
+        new TrainingExample(new double[] {0, 1}, new double[] {1}),
+        new TrainingExample(new double[] {1, 0}, new double[] {1}),
+        new TrainingExample(new double[] {1, 1}, new double[] {0})
     );</code></pre>
 
 <h3>8.4 Training XOR</h3>
 
-<pre><code>Random random =
-    new Random(42);
-
-NeuralNetwork network =
-    new NeuralNetwork();
-
+<pre><code>Random random = new Random(42);
+NeuralNetwork network = new NeuralNetwork();
 network.add(
-    new DenseLayer(
-        2,
-        4,
-        random
+    new DenseLayer(2, 4, random)
+);
+network.add(
+    new ActivationLayer(new SigmoidActivation()
     )
 );
-
 network.add(
-    new ActivationLayer(
-        new SigmoidActivation()
-    )
+    new DenseLayer(4, 1, random)
 );
-
 network.add(
-    new DenseLayer(
-        4,
-        1,
-        random
-    )
-);
-
-network.add(
-    new ActivationLayer(
-        new SigmoidActivation()
+    new ActivationLayer(new SigmoidActivation()
     )
 );</code></pre>
 
@@ -3463,7 +2972,6 @@ network.add(
 </p>
 
 <pre><code>Input       Expected    Prediction
-
 0, 0          0         ~0.0
 0, 1          1         ~1.0
 1, 0          1         ~1.0
@@ -3481,10 +2989,7 @@ network.add(
     0.5 as a basic decision threshold.
 </p>
 
-<pre><code>int predictedClass =
-    prediction &gt;= 0.5
-        ? 1
-        : 0;</code></pre>
+<pre><code>int predictedClass = prediction &gt;= 0.5 ? 1 : 0;</code></pre>
 
 <h3>8.7 Accuracy</h3>
 
@@ -3497,30 +3002,17 @@ network.add(
     correctPredictions / totalPredictions
 </div>
 
-<pre><code>public static double accuracy(
-        int[] predicted,
-        int[] actual) {
-
+<pre><code>public static double accuracy( int[] predicted, int[] actual) {
     if (predicted.length != actual.length) {
-        throw new IllegalArgumentException(
-            "Array lengths differ"
-        );
+        throw new IllegalArgumentException("Array lengths differ");
     }
-
     int correct = 0;
-
-    for (int i = 0;
-         i &lt; predicted.length;
-         i++) {
-
+    for (int i = 0; i &lt; predicted.length; i++) {
         if (predicted[i] == actual[i]) {
             correct++;
         }
     }
-
-    return
-        (double) correct
-        / predicted.length;
+    return (double) correct / predicted.length;
 }</code></pre>
 
 <h3>8.8 Moving to MNIST</h3>
@@ -3581,68 +3073,32 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public final class MnistReader {
-
     private MnistReader() {
     }
 
     public static Dataset readImages(
             InputStream inputStream)
             throws IOException {
-
-        DataInputStream input =
-            new DataInputStream(inputStream);
-
-        int magic =
-            input.readInt();
-
-        int imageCount =
-            input.readInt();
-
-        int rows =
-            input.readInt();
-
-        int columns =
-            input.readInt();
-
+        DataInputStream input = new DataInputStream(inputStream);
+        int magic = input.readInt();
+        int imageCount = input.readInt();
+        int rows = input.readInt();
+        int columns = input.readInt();
         if (magic != 2051) {
-
-            throw new IOException(
-                "Invalid MNIST image file"
-            );
+            throw new IOException("Invalid MNIST image file");
         }
-
-        double[][] images =
-            new double[imageCount]
+        double[][] images = new double[imageCount]
                        [rows * columns];
-
-        for (int image = 0;
-             image &lt; imageCount;
-             image++) {
-
-            for (int pixel = 0;
-                 pixel &lt; rows * columns;
-                 pixel++) {
-
-                int value =
-                    input.readUnsignedByte();
-
-                images[image][pixel] =
-                    value / 255.0;
+        for (int image = 0; image &lt; imageCount; image++) {
+            for (int pixel = 0; pixel &lt; rows * columns; pixel++) {
+                int value = input.readUnsignedByte();
+                images[image][pixel] = value / 255.0;
             }
         }
-
-        return new Dataset(
-            images,
-            rows,
-            columns
-        );
+        return new Dataset(images, rows, columns);
     }
 
-    public record Dataset(
-            double[][] images,
-            int rows,
-            int columns
-    ) {
+    public record Dataset( double[][] images, int rows, int columns ) {
     }
 }</code></pre>
 
@@ -3651,55 +3107,28 @@ public final class MnistReader {
 <pre><code>public static int[] readLabels(
         InputStream inputStream)
         throws IOException {
-
-    DataInputStream input =
-        new DataInputStream(inputStream);
-
-    int magic =
-        input.readInt();
-
-    int count =
-        input.readInt();
-
+    DataInputStream input = new DataInputStream(inputStream);
+    int magic = input.readInt();
+    int count = input.readInt();
     if (magic != 2049) {
-
-        throw new IOException(
-            "Invalid MNIST label file"
-        );
+        throw new IOException("Invalid MNIST label file");
     }
-
-    int[] labels =
-        new int[count];
-
-    for (int i = 0;
-         i &lt; count;
-         i++) {
-
-        labels[i] =
-            input.readUnsignedByte();
+    int[] labels = new int[count];
+    for (int i = 0; i &lt; count; i++) {
+        labels[i] = input.readUnsignedByte();
     }
-
     return labels;
 }</code></pre>
 
 <h3>8.12 Converting a Label to One-Hot Encoding</h3>
 
-<pre><code>public static double[] oneHot(
-        int label) {
-
-    double[] result =
-        new double[10];
-
+<pre><code>public static double[] oneHot( int label) {
+    double[] result = new double[10];
     if (label &lt; 0 ||
         label &gt; 9) {
-
-        throw new IllegalArgumentException(
-            "MNIST label must be between 0 and 9"
-        );
+        throw new IllegalArgumentException("MNIST label must be between 0 and 9");
     }
-
     result[label] = 1.0;
-
     return result;
 }</code></pre>
 
@@ -3721,8 +3150,7 @@ ReLU
     ↓
 10 neurons
     ↓
-Softmax
-</code></pre>
+Softmax</code></pre>
 
 <p>
     The final ten outputs correspond to:
@@ -3741,7 +3169,6 @@ Softmax
 </p>
 
 <pre><code>Digit       Probability
-
 0           0.001
 1           0.002
 2           0.004
@@ -3759,28 +3186,15 @@ Softmax
 
 <h3>8.15 Argmax</h3>
 
-<pre><code>public static int argmax(
-        double[] values) {
-
+<pre><code>public static int argmax( double[] values) {
     int bestIndex = 0;
-
-    double bestValue =
-        values[0];
-
-    for (int i = 1;
-         i &lt; values.length;
-         i++) {
-
+    double bestValue = values[0];
+    for (int i = 1; i &lt; values.length; i++) {
         if (values[i] &gt; bestValue) {
-
-            bestValue =
-                values[i];
-
-            bestIndex =
-                i;
+            bestValue = values[i];
+            bestIndex = i;
         }
     }
-
     return bestIndex;
 }</code></pre>
 
@@ -3790,26 +3204,13 @@ Softmax
     We can even render an image using ordinary characters.
 </p>
 
-<pre><code>public static void printImage(
-        double[] pixels,
-        int rows,
-        int columns) {
-
-    for (int row = 0;
-         row &lt; rows;
-         row++) {
-
-        for (int column = 0;
-             column &lt; columns;
-             column++) {
-
-            double value =
-                pixels[
+<pre><code>public static void printImage( double[] pixels, int rows, int columns) {
+    for (int row = 0; row &lt; rows; row++) {
+        for (int column = 0; column &lt; columns; column++) {
+            double value = pixels[
                     row * columns + column
                 ];
-
             char character;
-
             if (value &gt; 0.75) {
                 character = '#';
             } else if (value &gt; 0.50) {
@@ -3821,10 +3222,8 @@ Softmax
             } else {
                 character = ' ';
             }
-
             System.out.print(character);
         }
-
         System.out.println();
     }
 }</code></pre>
@@ -3862,19 +3261,10 @@ Softmax
     A confusion matrix solves this problem.
 </p>
 
-<pre><code>int[][] confusionMatrix =
-    new int[10][10];
-
-for (int i = 0;
-     i &lt; predictions.length;
-     i++) {
-
-    int actual =
-        labels[i];
-
-    int predicted =
-        predictions[i];
-
+<pre><code>int[][] confusionMatrix = new int[10][10];
+for (int i = 0; i &lt; predictions.length; i++) {
+    int actual = labels[i];
+    int predicted = predictions[i];
     confusionMatrix[actual][predicted]++;
 }</code></pre>
 
@@ -3970,38 +3360,30 @@ for (int i = 0;
 </p>
 
 <pre><code>src/main/java/nn/
-
 ├── Main.java
 │
-├── math/
-│   ├── Vector.java
+├── math/ │   ├── Vector.java
 │   └── Matrix.java
 │
-├── activation/
-│   ├── ActivationFunction.java
+├── activation/ │   ├── ActivationFunction.java
 │   ├── SigmoidActivation.java
 │   ├── ReLU.java
 │   └── Softmax.java
 │
-├── loss/
-│   ├── MeanSquaredError.java
+├── loss/ │   ├── MeanSquaredError.java
 │   └── CrossEntropy.java
 │
-├── layer/
-│   ├── Layer.java
+├── layer/ │   ├── Layer.java
 │   ├── DenseLayer.java
 │   └── ActivationLayer.java
 │
-├── network/
-│   ├── NeuralNetwork.java
+├── network/ │   ├── NeuralNetwork.java
 │   └── TrainableNeuron.java
 │
-├── training/
-│   ├── Trainer.java
+├── training/ │   ├── Trainer.java
 │   └── TrainingExample.java
 │
-└── data/
-    └── MnistReader.java</code></pre>
+└── data/ └── MnistReader.java</code></pre>
 
 <h3>8.22 Final Checklist</h3>
 
@@ -4149,148 +3531,82 @@ is doing.
 <pre><code>import java.util.Random;
 
 public class SimpleNeuron {
-
     private final double[] weights;
-
     private double bias;
-
-    public SimpleNeuron(
-            int inputCount,
-            Random random) {
-
-        weights =
-            new double[inputCount];
-
-        for (int i = 0;
-             i &lt; inputCount;
-             i++) {
-
-            weights[i] =
-                random.nextDouble() - 0.5;
+    public SimpleNeuron(int inputCount, Random random) {
+        weights = new double[inputCount];
+        for (int i = 0; i &lt; inputCount; i++) {
+            weights[i] = random.nextDouble() - 0.5;
         }
     }
 
-    private double sigmoid(
-            double value) {
-
-        return 1.0 /
-            (1.0 + Math.exp(-value));
+    private double sigmoid( double value) {
+        return 1.0 / (1.0 + Math.exp(-value));
     }
 
-    public double predict(
-            double[] input) {
-
+    public double predict( double[] input) {
         double z = bias;
-
-        for (int i = 0;
-             i &lt; weights.length;
-             i++) {
-
-            z +=
-                weights[i]
-                * input[i];
+        for (int i = 0; i &lt; weights.length; i++) {
+            z += weights[i] * input[i];
         }
-
         return sigmoid(z);
     }
 
-    public void train(
-            double[] input,
-            double target,
-            double learningRate) {
-
+    public void train( double[] input, double target, double learningRate) {
         double z = bias;
-
-        for (int i = 0;
-             i &lt; weights.length;
-             i++) {
-
-            z +=
-                weights[i]
-                * input[i];
+        for (int i = 0; i &lt; weights.length; i++) {
+            z += weights[i] * input[i];
         }
-
-        double output =
-            sigmoid(z);
+        double output = sigmoid(z);
 
         /*
          * MSE derivative with respect
          * to the output.
          */
-        double dLossDOutput =
-            output - target;
+        double dLossDOutput = output - target;
 
         /*
          * Sigmoid derivative.
          */
-        double dOutputDZ =
-            output * (1.0 - output);
+        double dOutputDZ = output * (1.0 - output);
 
         /*
          * Chain rule.
          */
-        double dLossDZ =
-            dLossDOutput
-            * dOutputDZ;
+        double dLossDZ = dLossDOutput * dOutputDZ;
 
         /*
          * Update each weight.
          */
-        for (int i = 0;
-             i &lt; weights.length;
-             i++) {
-
-            double gradient =
-                dLossDZ * input[i];
-
-            weights[i] -=
-                learningRate * gradient;
+        for (int i = 0; i &lt; weights.length; i++) {
+            double gradient = dLossDZ * input[i];
+            weights[i] -= learningRate * gradient;
         }
 
         /*
          * Since dZ/dBias = 1,
          * the bias gradient is dLossDZ.
          */
-        bias -=
-            learningRate * dLossDZ;
+        bias -= learningRate * dLossDZ;
     }
 
-    public static void main(
-            String[] args) {
-
-        Random random =
-            new Random(42);
-
-        SimpleNeuron neuron =
-            new SimpleNeuron(
-                2,
-                random
-            );
-
+    public static void main( String[] args) {
+        Random random = new Random(42);
+        SimpleNeuron neuron = new SimpleNeuron(2, random);
         double[][] inputs = {
-
             {0, 0},
             {0, 1},
             {1, 0},
             {1, 1}
         };
-
         double[] targets = {
-
             0,
             1,
             1,
             1
         };
-
-        for (int epoch = 0;
-             epoch &lt; 5000;
-             epoch++) {
-
-            for (int i = 0;
-                 i &lt; inputs.length;
-                 i++) {
-
+        for (int epoch = 0; epoch &lt; 5000; epoch++) {
+            for (int i = 0; i &lt; inputs.length; i++) {
                 neuron.train(
                     inputs[i],
                     targets[i],
@@ -4298,9 +3614,7 @@ public class SimpleNeuron {
                 );
             }
         }
-
         for (double[] input : inputs) {
-
             System.out.printf(
                 "[%.0f, %.0f] -> %.4f%n",
                 input[0],
@@ -4336,6 +3650,30 @@ public class SimpleNeuron {
 
     </div>
 </footer>
+
+<script>
+    (() => {
+        const root = document.documentElement;
+        const button = document.querySelector(".theme-toggle");
+        const storageKey = "nn-java-theme";
+
+        const setTheme = (theme) => {
+            root.dataset.theme = theme;
+            const isLight = theme === "light";
+            button.textContent = isLight ? "Dark theme" : "Light theme";
+            button.setAttribute("aria-pressed", String(isLight));
+        };
+
+        const savedTheme = localStorage.getItem(storageKey);
+        setTheme(savedTheme === "light" ? "light" : "dark");
+
+        button.addEventListener("click", () => {
+            const theme = root.dataset.theme === "light" ? "dark" : "light";
+            localStorage.setItem(storageKey, theme);
+            setTheme(theme);
+        });
+    })();
+</script>
 
 </body>
 </html>

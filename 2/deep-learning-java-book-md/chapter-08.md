@@ -1,48 +1,31 @@
-
-                "
-"
-                    "
-"Chapter 8"
-"
+**Chapter 8**
 
 # Evaluation & Testing
 
 Solve XOR, read raw MNIST files, and measure held-out accuracy without fooling yourself.
 
-                "
-"
-
-                "
-"
-
 ## What We Are Building
 
 A network is only useful if you can measure what it does honestly. This final chapter has two experiments and one discipline. First, **XOR**, the smallest problem that needs a hidden layer. Second, **MNIST**, the classic 28×28 handwritten-digit dataset, read from raw IDX files by our own parser and scored on images the network never trained on. The discipline is simple: report measured numbers, separate training data from test data, and check inputs before trusting them.
 
-                        FileRole
-
-                            `demo/XorDemo.java`Shows that one neuron fails XOR, then trains a 2 → 4 → 1 network with `Trainer`.
-                            `data/Mnist.java`A validating IDX reader that returns a `Dataset`.
-                            `evaluation/Metrics.java`Argmax, accuracy and confusion matrix in plain Java.
-                            `demo/MnistDemo.java`A runner that trains 784 → 64 → 10 and evaluates held-out test images.
-                            `evaluation/EvaluationChecks.java`Checks for metrics and for IDX magic numbers, counts, truncation and gzip.
-
-                "
-"
-
-                "
-"
+| File | Role |
+| --- | --- |
+| `demo/XorDemo.java` | Shows that one neuron fails XOR, then trains a 2 → 4 → 1 network with `Trainer`. |
+| `data/Mnist.java` | A validating IDX reader that returns a `Dataset`. |
+| `evaluation/Metrics.java` | Argmax, accuracy and confusion matrix in plain Java. |
+| `demo/MnistDemo.java` | A runner that trains 784 → 64 → 10 and evaluates held-out test images. |
+| `evaluation/EvaluationChecks.java` | Checks for metrics and for IDX magic numbers, counts, truncation and gzip. |
 
 ## 1. XOR: Why One Neuron Is Not Enough
 
 XOR ("exclusive or") answers 1 when exactly one of its two inputs is 1:
 
-                        x₁x₂expected target
-
-                            000
-                            011
-                            101
-                            110
+| x₁ | x₂ | expected target |
+| --- | --- | --- |
+| 0 | 0 | 0 |
+| 0 | 1 | 1 |
+| 1 | 0 | 1 |
+| 1 | 1 | 0 |
 
 This table lists the *targets* we want, not anything a network has produced. A single sigmoid neuron answers 1 when `w₁x₁ + w₂x₂ + b > 0`. Suppose it got all four rows right. Row `(0,0)` needs `b ≤ 0`. Rows `(0,1)` and `(1,0)` need `w₂ + b > 0` and `w₁ + b > 0`. Adding the last two gives `w₁ + w₂ + 2b > 0`. Row `(1,1)` needs `w₁ + w₂ + b ≤ 0`. Subtracting, `b > 0`, contradicting `b ≤ 0`. No weights exist, however long you train. A mathematical impossibility has been proven, and `XorDemo` will confirm that the baseline scores at most 3 of 4.
 
@@ -54,13 +37,7 @@ A layer of hidden sigmoid neurons computes several different lines and bends the
 
 The program first trains the one-neuron baseline and reports its accuracy. Then it builds `2 → 4 → 1` with sigmoid activations, trains with `Trainer` and `MeanSquaredError` for 8000 epochs at learning rate 1.0, and prints the predictions. Neural-network training from random weights occasionally lands in a poor region, so the runner tries seeds 1 through 10, one fresh network each, and stops at the first one that gets all four rows right. It reports which seed worked or admits that none did. We do not hide the failures; a restart is a legitimate, honest technique, and the output says exactly what happened.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/demo/XorDemo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/demo/XorDemo.java**
 
 ```java
 package com.neuralscratch.demo;
@@ -136,61 +113,35 @@ public final class XorDemo {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"Run it"
-"Copy"
-"
+**Run it**
 
 ```
 java -cp out com.neuralscratch.demo.XorDemo
 ```
 
-                    "
-"
-
 Read the output like this. The baseline table must show at least one row where `decision` differs from `target`. For the hidden-layer network, a successful attempt prints decimals near 0 for rows 1 and 4 and near 1 for rows 2 and 3, followed by `All four XOR rows are correct`. The exact decimals depend on your `DenseLayer.random` initialization, so none are printed here. If no seed succeeds on your machine, raise `EPOCHS`, use more hidden neurons, or vary the learning rate, and rerun.
 
-                    "
-"
-                        "
-"Pure Java check for the result"
-"
+**Pure Java check for the result**
 
 The program itself is the verification: it compares each thresholded prediction with the table above and counts matches. It never asserts success; it states how many of four rows were correct.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 2. Reading MNIST from Raw IDX Files
 
 MNIST distributes its images and labels in the **IDX** binary format. All integers are **big-endian** 32-bit values, which is exactly what `DataInputStream.readInt()` reads. An image file looks like this:
 
-                        OffsetContentExpected value
-
-                            0magic number2051 (`0x00000803`)
-                            4image countfor example 60000 or 10000
-                            8rows28
-                            12columns28
-                            16pixelscount × 784 unsigned bytes, row by row
+| Offset | Content | Expected value |
+| --- | --- | --- |
+| 0 | magic number | 2051 (`0x00000803`) |
+| 4 | image count | for example 60000 or 10000 |
+| 8 | rows | 28 |
+| 12 | columns | 28 |
+| 16 | pixels | count × 784 unsigned bytes, row by row |
 
 A label file has magic number 2049 (`0x00000801`), a count, and then one byte per label from 0 to 9. The magic number is your first defense: a wrong file, a text file, or a compressed file that was not decompressed fails immediately with a clear message instead of producing nonsense.
 
 Java's `byte` is *signed*, so a pixel of 255 would read as −1. `readUnsignedByte()` returns 0 to 255 as an `int`. We divide by 255.0 to get inputs in `[0, 1]`. Small, similarly scaled inputs keep the first layer's pre-activations moderate, which makes gradient descent far better behaved than raw 0–255 values. Each label becomes a **one-hot** row of length 10: all zeros except a 1 at the digit's index.
 
 ### Defensive checks in the reader
-
-                    "
-"
 
 - Wrong magic numbers, a non-28×28 shape, a non-positive image count, and an image count that differs from the label count all raise `IOException` with an explanatory message.
 
@@ -201,18 +152,10 @@ Java's `byte` is *signed*, so a pixel of 255 would read as −1. `readUnsignedBy
 - `maxSamples` must be positive and the loader reads at most that many rows. This bounds memory *and* prevents an enormous count in a corrupt header from triggering a huge allocation. If it covers the whole file, we also reject extra trailing bytes. If it does not, bytes beyond the requested prefix are not examined, so truncation after the prefix goes unnoticed by design.
 
 - Both gzip-compressed (`.gz`) and raw files work: `load` peeks at the first two bytes for the gzip signature `0x1f 0x8b` and wraps the stream in `GZIPInputStream` only if needed. A try-with-resources block closes both file streams on every path, and `open` closes its stream if detection fails, so nothing leaks.
-                    "
-"
 
 `Mnist.read` takes already-open streams, which lets our checks feed it small in-memory files; `Mnist.load` does the file handling for real use. We never load a path from a network address, and nothing here downloads data.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/data/Mnist.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/data/Mnist.java**
 
 ```java
 package com.neuralscratch.data;
@@ -349,23 +292,9 @@ public final class Mnist {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-"Memory budget"
-"
+**Memory budget**
 
 A `double` is 8 bytes. 6000 images × 784 pixels × 8 bytes ≈ 38 MB, and `Matrix.of` temporarily keeps a copy, so peak use is roughly double. The full 60000-image training set would be about ten times that, plus batch copies, so the demo limits itself to 6000 training and 1000 test images. You can raise the limits if your JVM heap allows; add `-Xmx2g` to the `java` command for a larger heap.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 3. Accuracy and the Confusion Matrix
 
@@ -373,13 +302,7 @@ A `double` is 8 bytes. 6000 images × 784 pixels × 8 bytes ≈ 38 MB, and `Matr
 
 To predict, run `network.predict(testInputs)` to get logits, apply `Softmax.apply` to get probabilities, and take the **argmax** of each row. Softmax never changes which entry is largest, so the argmax of probabilities equals the argmax of logits, but the probabilities are what you would show as "confidence". Targets are one-hot, so the same `argmax` recovers the true label.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/evaluation/Metrics.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/evaluation/Metrics.java**
 
 ```java
 package com.neuralscratch.evaluation;
@@ -467,27 +390,13 @@ public final class Metrics {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 4. Training 784 → 64 → 10 on MNIST
 
 The network has 784 inputs (one per pixel), 64 hidden ReLU neurons, and 10 `Identity` outputs, which are logits for `SoftmaxCrossEntropy`. The parameter count is `784×64 + 64 + 64×10 + 10 = 50,890`. The runner takes four local file paths in this order: training images, training labels, test images, test labels.
 
 It reads the first 6000 training rows and the first 1000 test rows, trains 10 epochs with batch size 32 and learning rate 0.05, and prints the loss for each epoch. It then predicts the held-out images *once* at the end, prints test loss, test accuracy, and the confusion matrix. The program prints only counts, losses and metrics, and it does not write any files or open network connections. If a file cannot be opened, it prints a one-line error and exits with status 1.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/demo/MnistDemo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/demo/MnistDemo.java**
 
 ```java
 package com.neuralscratch.demo;
@@ -566,20 +475,11 @@ public final class MnistDemo {
 }
 ```
 
-                    "
-"
-
 ### Getting the files
 
 This book does not include the dataset or a download address. Obtain the four MNIST IDX files yourself from a source you trust, such as a copy your course or organization already provides, and verify them against the source's published checksums if available. They are normally named like `train-images-idx3-ubyte`, `train-labels-idx1-ubyte`, `t10k-images-idx3-ubyte`, `t10k-labels-idx1-ubyte`, with or without a `.gz` suffix. Some mirrors rename files or use different sets, so if the reader rejects a file, read its message: it tells you which header field was wrong.
 
-                    "
-"
-                        "
-""
-"PowerShell (replace the four paths with your own files)"
-"Copy"
-"
+**PowerShell (replace the four paths with your own files)**
 
 ```
 java -cp out com.neuralscratch.demo.MnistDemo `
@@ -587,15 +487,7 @@ java -cp out com.neuralscratch.demo.MnistDemo `
   data\t10k-images-idx3-ubyte data\t10k-labels-idx1-ubyte
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"macOS / Linux shell"
-"Copy"
-"
+**macOS / Linux shell**
 
 ```
 java -cp out com.neuralscratch.demo.MnistDemo \
@@ -603,15 +495,9 @@ java -cp out com.neuralscratch.demo.MnistDemo \
   data/t10k-images-idx3-ubyte data/t10k-labels-idx1-ubyte
 ```
 
-                    "
-"
-
 ### Reading the result without fooling yourself
 
 No accuracy figure is printed on this page because it would be a guess. The number depends on your files, your initialization code from Chapter 4, and the fixed seed. In our own development runs against a reference implementation of the Chapters 3–5 contract, the loss fell steadily over the 10 epochs and held-out accuracy ended well above the 10 percent expected from random guessing, and it was not near-perfect. Treat that as an observation about one setup, not a promise about yours. Plain gradient descent with a small network and 6000 images is a learning exercise, not a record attempt.
-
-                    "
-"
 
 - If `Trainer` reports a non-finite loss, lower the learning rate constant. Large initial weights can overflow on 784 inputs.
 
@@ -620,25 +506,12 @@ No accuracy figure is printed on this page because it would be a guess. The numb
 - Look at the confusion matrix, not just the headline accuracy. Digits whose shapes are similar are mixed up more often.
 
 - The test images must *never* take part in training or tuning. If you want to tune epochs or learning rate, carve a validation set out of the training file (a later slice of its rows, for instance), tune against it, and open the test set once at the end. Our runner touches the test data exactly once, after training.
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 5. Checks for the Reader and the Metrics
 
 Data bugs are quiet; they simply make accuracy bad. These checks build tiny IDX files in memory with `DataOutputStream` and verify the behavior described above. They cover a valid file, the pixel scale (0 maps to 0.0 and 255 to 1.0), one-hot labels, the sample limit, a wrong image magic, a wrong label magic, mismatched counts, a non-28×28 header, a truncated header, truncated pixel data, truncated labels, a label of 10, extra bytes, a zero limit, and a real gzip file written to a temporary directory and deleted afterwards. They also verify argmax tie-breaking, accuracy, and that the confusion matrix counts every sample once.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/evaluation/EvaluationChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/evaluation/EvaluationChecks.java**
 
 ```java
 package com.neuralscratch.evaluation;
@@ -811,15 +684,7 @@ public final class EvaluationChecks {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"PowerShell (project root)"
-"Copy"
-"
+**PowerShell (project root)**
 
 ```
 New-Item -ItemType Directory -Force out | Out-Null
@@ -827,15 +692,7 @@ javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
 java -cp out com.neuralscratch.evaluation.EvaluationChecks
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"macOS / Linux shell (project root)"
-"Copy"
-"
+**macOS / Linux shell (project root)**
 
 ```
 mkdir -p out
@@ -843,31 +700,13 @@ javac -d out $(find src -name "*.java")
 java -cp out com.neuralscratch.evaluation.EvaluationChecks
 ```
 
-                    "
-"
-
 It prints `All evaluation checks passed` when every check holds. Nothing in this chapter needs a third-party library: only `java.io`, `java.nio.file`, `java.util` and `java.util.zip`.
 
-                    "
-"
-                        "
-"Assumptions about earlier chapters"
-"
+**Assumptions about earlier chapters**
 
 The demos use the agreed API: `new Sigmoid()`, `new ReLU()`, `new Identity()`, `new MeanSquaredError()`, `DenseLayer.random(...)`, `new Network(...)` and `network.predict(Matrix)`. If your constructors differ, change only those expressions.
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - A proof, and a runnable demonstration, that XOR needs a nonlinear hidden layer.
 
@@ -876,28 +715,12 @@ The demos use the agreed API: `new Sigmoid()`, `new ReLU()`, `new Identity()`, `
 - `Metrics` and `MnistDemo`: argmax, accuracy, confusion matrix, and a held-out evaluation workflow.
 
 - A full dependency-free stack: matrices, calculus checks, neurons, layers, backpropagation, ReLU, softmax cross-entropy, a shuffled trainer, and an evaluation toolkit.
-                    "
-"
-                    "
-"
-                        "
-"Where to go next"
-"
+**Where to go next**
 
 Try one change at a time and measure it: more hidden units, more epochs, a different seed, a 20% validation split from the training rows, or a second hidden layer. Because everything is plain Java, you can step through each calculation in a debugger and verify it against the formulas in these chapters.
 
-                    "
-"
-
 You started with a single weighted sum and now have a trainable, testable classifier written entirely with the standard library.
 
-                "
-"
+[← Previous: Chapter 7](chapter-07.md)
 
-                "
-"
-                    ← Previous: Chapter 7
-                    Back to Table of Contents →
-                "
-"
-            
+[Back to Table of Contents →](README.md)

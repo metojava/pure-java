@@ -1,58 +1,28 @@
-
-                "
-"
-                    "
-"Chapter 4"
-"
+**Chapter 4**
 
 # Building the Network Layers
 
 Stack neurons into a dense layer, chain layers into a network, and push a whole batch through with matrix multiplication.
 
-                "
-"
-
-                "
-"
-
 ## What We Are Building
 
 Chapter 3 ended with a puzzle: one neuron cannot compute XOR, but three neurons arranged in two stages can. In this chapter we turn that idea into reusable code:
 
-                    "
-"
-
 - `com.neuralscratch.nn.DenseLayer`: many neurons that all read the same inputs, stored as one weight matrix and one bias vector.
 
 - `com.neuralscratch.nn.Network`: an ordered list of layers, where each layer's outputs become the next layer's inputs.
-                    "
-"
 
 We will also initialize weights randomly but reproducibly, trace every shape through a 2 × 3 × 1 network, and verify the hand-built XOR network from Chapter 3. The `Neuron` class stays as a teaching tool; layers do not depend on it.
-
-                "
-"
-
-                "
-"
 
 ## 1. From One Neuron to a Layer
 
 Suppose three neurons all receive the same two inputs. Each has its own two weights and its own bias. Writing them out:
 
-                    "
-"z₀ = x₀w₀₀ + x₁w₁₀ + b₀    z₁ = x₀w₀₁ + x₁w₁₁ + b₁    z₂ = x₀w₀₂ + x₁w₁₂ + b₂"
-"
+z₀ = x₀w₀₀ + x₁w₁₀ + b₀    z₁ = x₀w₀₁ + x₁w₁₁ + b₁    z₂ = x₀w₀₂ + x₁w₁₂ + b₂
 
 Read the subscript `wij` as "from input `i` to neuron `j`". If we place neuron `j`'s weights in *column* `j` of a matrix, the three sums become one row-times-matrix product from Chapter 2:
 
-                    "
-"
-                        "
-""
-"One input row, three neurons"
-"Copy"
-"
+**One input row, three neurons**
 
 ```
 x (1 × 2)      W (2 × 3)                 b (size 3)         z (1 × 3)
@@ -63,77 +33,41 @@ row i of W  = everything input i sends out
 column j    = everything neuron j listens to
 ```
 
-                    "
-"
-
 So the weight matrix of a layer has **rows = input size** and **columns = output size**. Each column is exactly the weight vector of one Chapter 3 neuron.
 
 ### A whole batch at once
 
 Now stack several input examples as rows of an input matrix `X`. Matrix multiplication handles every row independently, so the same formula processes the batch in one call. `addRowVector` adds the bias to every row, and `apply` runs the activation on every entry.
 
-                    "
-"A = f(X · W + b)     (batch × in) · (in × out) → (batch × out)"
-"
+A = f(X · W + b)     (batch × in) · (in × out) → (batch × out)
 
 With the Chapter 2 numbers, `X = [[2, 3], [1, 1]]`, `W = [[1, 0, 2], [4, 5, 2]]`, `b = [1, −1, 0]`, and Identity activation, the output is `[[15, 14, 10], [6, 4, 4]]`: two examples in, two rows of three neuron outputs out. Our check program verifies those exact numbers.
-
-                "
-"
-
-                "
-"
 
 ## 2. Choosing Starting Weights
 
 Before training, weights need values. Two obvious choices both fail:
 
-                    "
-"
-
 - **All zeros (or all equal).** Every neuron in a layer computes the same output and, in Chapter 5, receives the same correction. They stay identical forever, so three neurons behave like one. Random values break this *symmetry*.
 
 - **Large random values.** A pre-activation sums one term per input. Many large terms make `|z|` large, pushing Sigmoid into its flat regions where the slope is nearly zero and learning stalls.
-                    "
-"
 
 ### Xavier (Glorot) initialization in plain terms
 
 The **variance** of a random number measures how spread out it is; the **standard deviation** is its square root. If inputs have variance about 1 and each weight has variance `v`, a sum of `n` independent terms `x·w` has variance about `n·v`. To keep the forward signal's spread steady, we want `v ≈ 1/inputSize`. The backward signal in Chapter 5 flows through the same weights the other way and prefers `v ≈ 1/outputSize`. Xavier initialization compromises with the average:
 
-                    "
-"variance = 2 / (inputSize + outputSize)     stddev = √(2 / (inputSize + outputSize))"
-"
+variance = 2 / (inputSize + outputSize)     stddev = √(2 / (inputSize + outputSize))
 
 For a 2 → 3 layer that is `√(2/5) ≈ 0.632`; for 3 → 1 it is `√(2/4) ≈ 0.707`. We draw each weight from `Random.nextGaussian()` (a bell curve with mean 0, standard deviation 1) and multiply by this stddev. Biases start at zero; the random weights already break symmetry. Chapter 6 introduces a slightly different scale suited to ReLU.
 
-                    "
-"
-                        "
-"Reproducibility"
-"
+**Reproducibility**
 
 The caller passes a `java.util.Random`. With the same seed and the same order of calls, you get the same weights on every run and every JVM, which makes bugs repeatable and examples comparable.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 3. The `DenseLayer` Class
 
 "Dense" (or "fully connected") means every input connects to every neuron. The layer holds its parameters and computes a forward pass. It is *mutable* in exactly one controlled way: `applyGradients` replaces the weight matrix and bias vector during training. Because `Matrix` and `Vector` are immutable, the getters can safely return the current values.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/nn/DenseLayer.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/nn/DenseLayer.java**
 
 ```java
 package com.neuralscratch.nn;
@@ -240,30 +174,15 @@ public final class DenseLayer {
 }
 ```
 
-                    "
-"
-
 All validation happens *before* either field changes, so a rejected update never leaves a layer half-modified. We will not call `applyGradients` until Chapter 5; for now just notice its rule: move each parameter a small step in the direction that reduces the error.
 
 `activation::apply` converts our two-method `Activation` into the single-method `DoubleUnaryOperator` that `Matrix.apply` expects. The derivative is unused in a forward pass, which is why a `Step` layer works fine here.
-
-                "
-"
-
-                "
-"
 
 ## 4. The `Network` Class
 
 A network is a sequence of layers. Layer `k` produces `outputSize()` columns, so layer `k + 1` must expect exactly that many inputs. We check this *once*, in the constructor, so a mis-wired network fails at construction time instead of in the middle of training.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/nn/Network.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/nn/Network.java**
 
 ```java
 package com.neuralscratch.nn;
@@ -323,30 +242,21 @@ public final class Network {
 }
 ```
 
-                    "
-"
-
 The list returned by `layers()` cannot be modified, so callers cannot add, remove, or reorder layers after validation. The layers inside it remain the same objects, which is exactly what Chapter 5 needs: training updates them through `applyGradients`.
-
-                "
-"
-
-                "
-"
 
 ## 5. Tracing Shapes Through a 2 × 3 × 1 Network
 
 "2 × 3 × 1" describes layer widths: 2 inputs, a hidden layer of 3 neurons, and 1 output neuron. Feed the four XOR inputs as one batch:
 
-                        ValueComputationShape
-
-                            `X`input batch4 × 2
-                            `W₁`, `b₁`hidden parameters2 × 3, size 3
-                            `Z₁``X · W₁ + b₁`4 × 3
-                            `A₁``σ(Z₁)`4 × 3
-                            `W₂`, `b₂`output parameters3 × 1, size 1
-                            `Z₂``A₁ · W₂ + b₂`4 × 1
-                            `A₂``σ(Z₂)` = predictions4 × 1
+| Value | Computation | Shape |
+| --- | --- | --- |
+| `X` | input batch | 4 × 2 |
+| `W₁`, `b₁` | hidden parameters | 2 × 3, size 3 |
+| `Z₁` | `X · W₁ + b₁` | 4 × 3 |
+| `A₁` | `σ(Z₁)` | 4 × 3 |
+| `W₂`, `b₂` | output parameters | 3 × 1, size 1 |
+| `Z₂` | `A₁ · W₂ + b₂` | 4 × 1 |
+| `A₂` | `σ(Z₂)` = predictions | 4 × 1 |
 
 The batch size (4) passes straight through; only the column count changes from layer to layer. This network has `2×3 + 3 + 3×1 + 1 = 13` parameters. With random weights its predictions are meaningless; finding good values is the job of Chapter 5.
 
@@ -354,32 +264,20 @@ The batch size (4) passes straight through; only the column count changes from l
 
 Chapter 3's construction fits this structure with a hidden width of 2. Column 0 of `W₁` is the OR neuron (`[1, 1]`, bias `−0.5`); column 1 is NAND (`[−1, −1]`, bias `1.5`). The output layer is AND (`[1, 1]`, bias `−1.5`).
 
-                        InputORNANDAND(OR, NAND)XOR
-
-                            (0, 0)0100
-                            (0, 1)1111
-                            (1, 0)1111
-                            (1, 1)1000
+| Input | OR | NAND | AND(OR, NAND) | XOR |
+| --- | --- | --- | --- | --- |
+| (0, 0) | 0 | 1 | 0 | 0 |
+| (0, 1) | 1 | 1 | 1 | 1 |
+| (1, 0) | 1 | 1 | 1 | 1 |
+| (1, 1) | 1 | 0 | 0 | 0 |
 
 The hidden layer *re-describes* each input in new coordinates (OR, NAND). In those coordinates the two classes are linearly separable, so a single output neuron can finish the job. This is the core reason depth helps.
-
-                "
-"
-
-                "
-"
 
 ## 6. A Runnable Demo
 
 The demo creates a random 2 × 3 × 1 Sigmoid network from seed 42, prints its weights and intermediate shapes, and then runs the hand-built XOR network. It formats numbers with `Locale.ROOT` so the output looks the same everywhere.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/examples/Chapter4Demo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/examples/Chapter4Demo.java**
 
 ```java
 package com.neuralscratch.examples;
@@ -440,18 +338,9 @@ public final class Chapter4Demo {
 }
 ```
 
-                    "
-"
-
 Expected output (the random values come from `java.util.Random`, whose algorithm is fixed by the Java specification):
 
-                    "
-"
-                        "
-""
-"Output"
-"Copy"
-"
+**Output**
 
 ```
 Random 2x3x1 network, seed 42
@@ -479,28 +368,13 @@ hand-built XOR predictions (4 x 1):
   [  0.0000]
 ```
 
-                    "
-"
-
 Read the first row of `A1`: input `(0, 0)` makes every pre-activation equal to its zero bias, and `σ(0) = 0.5`. The four random predictions all sit between 0.25 and 0.31: an untrained network has not learned anything about XOR. The hand-built network produces exactly `0, 1, 1, 0`.
-
-                "
-"
-
-                "
-"
 
 ## 7. Checks Without a Test Framework
 
 These checks confirm the batched forward pass against hand-computed numbers, the XOR construction, reproducible initialization with a plausible spread, gradient application, and every validation rule.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/nn/NetworkChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/nn/NetworkChecks.java**
 
 ```java
 package com.neuralscratch.nn;
@@ -656,18 +530,9 @@ public final class NetworkChecks {
 }
 ```
 
-                    "
-"
-
 Compile all sources as in Chapter 3, then run:
 
-                    "
-"
-                        "
-""
-"Terminal (project root, after regenerating sources.txt)"
-"Copy"
-"
+**Terminal (project root, after regenerating sources.txt)**
 
 ```
 javac -d out @sources.txt
@@ -675,56 +540,23 @@ java -cp out com.neuralscratch.examples.Chapter4Demo
 java -cp out com.neuralscratch.nn.NetworkChecks
 ```
 
-                    "
-"
-
 In PowerShell, quote the argument file as `"@sources.txt"`. Expected final line: `All layer and network checks passed`.
 
-                    "
-"
-                        "
-"Common shape mistake"
-"
+**Common shape mistake**
 
 If you come from a textbook that writes `W · x` with `x` as a column, your weight matrix is the transpose of ours (`out × in`). Both conventions are correct; mixing them is not. In this book, inputs are rows and `W` is always `in × out`.
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - `DenseLayer`: `in × out` weights, a bias per neuron, a batched forward pass `f(XW + b)`, seeded Xavier initialization, and a validated gradient-descent update.
 
 - `Network`: dimension-checked layer chaining, an unmodifiable layer list, and batched prediction.
 
 - A hand-built network that solves XOR, demonstrating why a hidden layer adds power.
-                    "
-"
-                    "
-"
-                        "
-"Before Chapter 5"
-"
+**Before Chapter 5**
 
 Pick one weight in `W₁` of the random network. Change it by `+0.01` and rerun `predict`. How much did each prediction move? Measuring that sensitivity for every weight, efficiently, is exactly what backpropagation does.
 
-                    "
-"
-                "
-"
+[← Previous: Chapter 3](chapter-03.md)
 
-                "
-"
-                    ← Previous: Chapter 3
-                    Next: Chapter 5 →
-                "
-"
-            
+[Next: Chapter 5 →](chapter-05.md)

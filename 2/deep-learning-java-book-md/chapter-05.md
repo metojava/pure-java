@@ -1,50 +1,26 @@
-
-                "
-"
-                    "
-"Chapter 5"
-"
+**Chapter 5**
 
 # Backpropagation & Gradient Descent
 
 Measure how wrong the network is, trace the blame backward through every layer with the chain rule, and nudge each weight downhill.
 
-                "
-"
-
-                "
-"
-
 ## What We Are Building
 
 Chapter 4's network can make predictions, but its weights are random. Learning means adjusting those weights so predictions move toward known answers. That needs three ingredients:
-
-                    "
-"
 
 - A **loss**: one number saying how wrong the predictions are. We implement mean squared error.
 
 - **Gradients**: for every weight and bias, the slope of the loss with respect to that parameter. **Backpropagation** computes all of them in one backward sweep.
 
 - **Gradient descent**: move each parameter a small step against its slope. `DenseLayer.applyGradients` from Chapter 4 already does this.
-                    "
-"
 
 New files: `com.neuralscratch.loss.OutputObjective`, `com.neuralscratch.loss.MeanSquaredError`, and `com.neuralscratch.training.Backpropagation`, plus a demo and a check program. We finish by confirming our hand-derived gradients against the numerical `Calculus.gradient` from Chapter 2.
-
-                "
-"
-
-                "
-"
 
 ## 1. Measuring Error: Mean Squared Error
 
 For one prediction `a` and its target `y`, the error is `a − y`. Squaring makes it positive and punishes big misses more than small ones. We multiply by ½ so the derivative comes out clean, and we average over the batch so the loss does not grow just because the batch has more rows.
 
-                    "
-"L = (1 / N) × Σrows n Σcolumns k ½ (ank − ynk)²"
-"
+L = (1 / N) × Σrows n Σcolumns k ½ (ank − ynk)²
 
 Here `N` is the number of rows (examples) in the batch. For outputs `[[1, 2], [3, 4]]` and targets `[[0, 2], [3, 2]]`, the differences are `1, 0, 0, 2`, the squares sum to 5, and `L = 0.5 × 5 / 2 = 1.25`.
 
@@ -52,14 +28,7 @@ Here `N` is the number of rows (examples) in the batch. For outputs `[[1, 2], [3
 
 Each entry appears in exactly one squared term. The derivative of `½(a − y)²` with respect to `a` is `(a − y)`—the ½ cancels the 2 from the power rule—and the average contributes `1/N`:
 
-                    "
-"∂L / ∂ank = (ank − ynk) / N"
-"
-                "
-"
-
-                "
-"
+∂L / ∂ank = (ank − ynk) / N
 
 ## 2. The `OutputObjective` Contract
 
@@ -67,13 +36,7 @@ Backpropagation starts at the output layer with a quantity called `δ` ("delta")
 
 We let the loss object compute that starting delta instead of only `∂L/∂a`. Why? In Chapter 6, Softmax combined with cross-entropy has a starting delta of simply `a − y`, which is both simpler and more numerically stable than multiplying two separate pieces. Passing both the last layer's pre-activation (called `logits` here, the usual name for raw output scores) and its activation keeps that option open.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/loss/OutputObjective.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/loss/OutputObjective.java**
 
 ```java
 package com.neuralscratch.loss;
@@ -90,15 +53,7 @@ public interface OutputObjective {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/loss/MeanSquaredError.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/loss/MeanSquaredError.java**
 
 ```java
 package com.neuralscratch.loss;
@@ -150,79 +105,49 @@ public final class MeanSquaredError implements OutputObjective {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 3. The Chain Rule on One Neuron, With Numbers
 
 Before matrices, follow one weight by hand. A single Sigmoid neuron has weight `w = 0.5` and bias `b = −0.5`. The input is `x = 2` and the target is `y = 1`.
 
 ### Forward pass
 
-                        StepFormulaValue
-
-                            pre-activation`z = w·x + b`0.5 × 2 − 0.5 = 0.5
-                            activation`a = σ(z)`0.622459
-                            loss (N = 1)`L = ½(a − y)²`½ × 0.377541² ≈ 0.071268
+| Step | Formula | Value |
+| --- | --- | --- |
+| pre-activation | `z = w·x + b` | 0.5 × 2 − 0.5 = 0.5 |
+| activation | `a = σ(z)` | 0.622459 |
+| loss (N = 1) | `L = ½(a − y)²` | ½ × 0.377541² ≈ 0.071268 |
 
 ### Backward pass
 
 The weight affects the loss only through a chain: `w → z → a → L`. The chain rule says the overall rate of change is the product of the local rates along the chain:
 
-                    "
-"∂L/∂w = ∂L/∂a × ∂a/∂z × ∂z/∂w"
-"
+∂L/∂w = ∂L/∂a × ∂a/∂z × ∂z/∂w
 
-                        Local slopeFormulaValue
-
-                            `∂L/∂a``a − y`−0.377541
-                            `∂a/∂z``σ(z)(1 − σ(z))`0.235004
-                            `δ = ∂L/∂z`product of the two above−0.088723
-                            `∂z/∂w``x`2
-                            `∂z/∂b``1`1
-                            `∂L/∂w``δ × x`−0.177447
-                            `∂L/∂b``δ × 1`−0.088723
+| Local slope | Formula | Value |
+| --- | --- | --- |
+| `∂L/∂a` | `a − y` | −0.377541 |
+| `∂a/∂z` | `σ(z)(1 − σ(z))` | 0.235004 |
+| `δ = ∂L/∂z` | product of the two above | −0.088723 |
+| `∂z/∂w` | `x` | 2 |
+| `∂z/∂b` | `1` | 1 |
+| `∂L/∂w` | `δ × x` | −0.177447 |
+| `∂L/∂b` | `δ × 1` | −0.088723 |
 
 Both gradients are negative, meaning "increasing this parameter lowers the loss." That makes sense: the output 0.62 is below the target 1, and raising `w` or `b` raises `z` and therefore `a`. Notice how `δ` appears in both results. Computing it once and reusing it is the whole efficiency trick of backpropagation.
-
-                "
-"
-
-                "
-"
 
 ## 4. Gradient Descent: Walking Downhill
 
 Picture the loss as a landscape whose coordinates are the parameters. The gradient points uphill—the direction of steepest increase. To reduce the loss, step the opposite way, scaled by a small positive number called the **learning rate** `η` (eta):
 
-                    "
-"w ← w − η × ∂L/∂w      b ← b − η × ∂L/∂b"
-"
+w ← w − η × ∂L/∂w      b ← b − η × ∂L/∂b
 
 With `η = 1` in our example, `w` becomes `0.5 + 0.177 = 0.677` and `b` becomes `−0.5 + 0.089 = −0.411`. A rate that is too small learns slowly; one that is too large overshoots the valley and can make the loss grow. Chapter 7 explores choosing it and running many steps.
-
-                "
-"
-
-                "
-"
 
 ## 5. From One Neuron to Whole Layers
 
 Now let every quantity be a matrix with one row per example. For layer `l`: input activations `Al−1` (with `A₀ = X`, the batch), weights `Wl`, pre-activation `Zl = Al−1Wl + bl`, output `Al = f(Zl)`, and `δl = ∂L/∂Zl`, which has the same shape as `Zl`.
 
-                    "
-"
-                        "
-"The four backpropagation equations"
-"
-                        "
-"
+**The four backpropagation equations**
 
 - Output delta: `δL = ∂L/∂AL ⊙ f′(ZL)` (computed by `OutputObjective.delta`).
 
@@ -231,10 +156,6 @@ Now let every quantity be a matrix with one row per example. For layer `l`: inpu
 - Weight gradient: `∂L/∂Wl = Al−1T · δl`.
 
 - Bias gradient: `∂L/∂bl` = column sums of `δl` (add up the rows).
-                        "
-"
-                    "
-"
 
 ### Where equation 3 comes from
 
@@ -250,22 +171,16 @@ Hidden activation `A[n][j]` feeds every neuron `k` of the next layer through wei
 
 ### Shapes for a 2 × 3 × 1 network with a batch of 4
 
-                        QuantityComputationShape
-
-                            `δ₂``(A₂ − Y)/4 ⊙ σ′(Z₂)`4 × 1
-                            `∂L/∂W₂``A₁ᵀ (3 × 4) · δ₂ (4 × 1)`3 × 1 = shape of `W₂`
-                            `∂L/∂b₂`column sums of `δ₂`size 1
-                            `δ₁``δ₂ (4 × 1) · W₂ᵀ (1 × 3) ⊙ σ′(Z₁) (4 × 3)`4 × 3
-                            `∂L/∂W₁``Xᵀ (2 × 4) · δ₁ (4 × 3)`2 × 3 = shape of `W₁`
-                            `∂L/∂b₁`column sums of `δ₁`size 3
+| Quantity | Computation | Shape |
+| --- | --- | --- |
+| `δ₂` | `(A₂ − Y)/4 ⊙ σ′(Z₂)` | 4 × 1 |
+| `∂L/∂W₂` | `A₁ᵀ (3 × 4) · δ₂ (4 × 1)` | 3 × 1 = shape of `W₂` |
+| `∂L/∂b₂` | column sums of `δ₂` | size 1 |
+| `δ₁` | `δ₂ (4 × 1) · W₂ᵀ (1 × 3) ⊙ σ′(Z₁) (4 × 3)` | 4 × 3 |
+| `∂L/∂W₁` | `Xᵀ (2 × 4) · δ₁ (4 × 3)` | 2 × 3 = shape of `W₁` |
+| `∂L/∂b₁` | column sums of `δ₁` | size 3 |
 
 Every gradient has exactly the shape of the parameter it updates. If your shapes do not line up, the formula is wrong; the `Matrix` class will tell you immediately.
-
-                "
-"
-
-                "
-"
 
 ## 6. Compute All Gradients First, Then Update
 
@@ -273,23 +188,11 @@ Equation 2 uses `Wl+1`, the weights of the layer *after* the one whose delta we 
 
 Our implementation therefore runs in three phases: a forward pass that caches every `Z` and `A`; a backward pass that stores every gradient in arrays; and only then an update loop calling `applyGradients`. The gradient check later in this chapter would catch the bug for networks with two or more layers.
 
-                "
-"
-
-                "
-"
-
 ## 7. The `Backpropagation` Class
 
 `trainBatch` performs one gradient-descent step on one batch and returns the loss measured *before* the update. It validates everything up front, so invalid arguments never modify the network.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/training/Backpropagation.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/training/Backpropagation.java**
 
 ```java
 package com.neuralscratch.training;
@@ -392,39 +295,19 @@ public final class Backpropagation {
 }
 ```
 
-                    "
-"
-
 The name `rowSum` means "sum of the rows": the result has one entry per column, which is exactly the bias shape. For `[[1, 2], [3, 4]]` it returns `[4, 6]`.
 
-                    "
-"
-                        "
-"Activations must have derivatives"
-"
+**Activations must have derivatives**
 
 Training calls `derivative` on every layer's activation, so a `Step` layer throws `UnsupportedOperationException` here. That is deliberate: the hand-built XOR network from Chapter 4 can predict but not learn. Use `Sigmoid` or `Identity` for now; Chapter 6 adds ReLU and Softmax.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 8. Trust, but Verify: Gradient Checking
 
 Backpropagation code can contain bugs that still let the loss decrease a little. The reliable test is to compare its gradients with numerical estimates from Chapter 2's central difference:
 
-                    "
-"∂L/∂θ ≈ [L(θ + h) − L(θ − h)] / (2h)"
-"
+∂L/∂θ ≈ [L(θ + h) − L(θ − h)] / (2h)
 
 The procedure:
-
-                    "
-"
 
 - **Flatten** every weight and bias of the network into one `Vector` of parameters `θ`. For 2 × 3 × 1 that is 13 numbers.
 
@@ -433,28 +316,14 @@ The procedure:
 - Get the **analytic** gradient from `trainBatch`: run it on a fresh copy with learning rate 1. Since `θnew = θ − 1 × gradient`, the gradient equals `θ − θnew`.
 
 - Compare. With `h = 10⁻⁵` and smooth activations, the two typically agree to around `10⁻⁹`; we accept differences below `10⁻⁷`.
-                    "
-"
 
 Recovering the gradient from an update costs only one floating-point rounding error per parameter and keeps the `Backpropagation` API exactly as specified. Remember that finite differences need two loss evaluations per parameter, so they are for checking, never for training.
-
-                "
-"
-
-                "
-"
 
 ## 9. A Runnable Demo
 
 The demo has three parts: it reproduces the hand-computed chain-rule example, runs a gradient check on a seeded 2 × 3 × 1 network, and gives a short preview of repeated training steps on OR. Proper training loops with epochs, shuffling, and mini-batches arrive in Chapter 7.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/examples/Chapter5Demo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/examples/Chapter5Demo.java**
 
 ```java
 package com.neuralscratch.examples;
@@ -595,18 +464,9 @@ public final class Chapter5Demo {
 }
 ```
 
-                    "
-"
-
 Expected output:
 
-                    "
-"
-                        "
-""
-"Output"
-"Copy"
-"
+**Output**
 
 ```
 Chain rule example: loss = 0.071268, dL/dw = -0.177447, dL/db = -0.088723
@@ -638,28 +498,13 @@ Preview: 2000 full-batch steps on OR, learning rate 2.0
   [1, 1] -> 0.9976 (target 1)
 ```
 
-                    "
-"
-
 The first line matches the hand calculation in Section 3. Every analytic gradient agrees with its numerical estimate, and repeated steps drive the OR loss toward zero. The exact digits in the last decimal place of the numeric column may differ slightly between JVMs because `Math.exp` is allowed tiny platform differences; the PASS verdict should not change.
-
-                "
-"
-
-                "
-"
 
 ## 10. Checks Without a Test Framework
 
 The checks verify the loss and delta formulas on small matrices, the chain-rule example, gradient checks on a two-layer and a three-layer network (either one exposes the update-order bug from Section 6), that the returned loss is the pre-update loss, that a small step lowers the loss, and that invalid arguments leave the network untouched.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/training/BackpropagationChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/training/BackpropagationChecks.java**
 
 ```java
 package com.neuralscratch.training;
@@ -862,18 +707,9 @@ public final class BackpropagationChecks {
 }
 ```
 
-                    "
-"
-
 Regenerate `sources.txt` (Chapter 3 shows the commands), then compile and run:
 
-                    "
-"
-                        "
-""
-"Terminal (project root)"
-"Copy"
-"
+**Terminal (project root)**
 
 ```
 javac -d out @sources.txt
@@ -881,46 +717,19 @@ java -cp out com.neuralscratch.examples.Chapter5Demo
 java -cp out com.neuralscratch.training.BackpropagationChecks
 ```
 
-                    "
-"
-
 Expected final line: `All backpropagation checks passed`. As an experiment, move the update loop inside the backward loop (update each layer right after computing its gradient) and rerun the checks: the gradient check reports a mismatch.
 
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - `OutputObjective` and `MeanSquaredError`: a batch-averaged loss and the starting delta `(A − Y)/N ⊙ f′(Z)`.
 
 - `Backpropagation.trainBatch`: cached forward pass, the four backpropagation equations, all gradients computed before any update, and a pre-update loss.
 
 - A gradient check tying the analytic derivatives back to Chapter 2's numerical `Calculus.gradient`.
-                    "
-"
-                    "
-"
-                        "
-"Before Chapter 6"
-"
+**Before Chapter 6**
 
 Change the preview to learn XOR instead of OR. Depending on the seed and learning rate, it may learn quickly, slowly, or get stuck with Sigmoid's small slopes. Chapter 6 explains why and introduces ReLU, Softmax, and cross-entropy; Chapter 7 wraps `trainBatch` in a full training loop.
 
-                    "
-"
-                "
-"
+[← Previous: Chapter 4](chapter-04.md)
 
-                "
-"
-                    ← Previous: Chapter 4
-                    Next: Chapter 6 →
-                "
-"
-            
+[Next: Chapter 6 →](chapter-06.md)

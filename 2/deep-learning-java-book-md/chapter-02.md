@@ -1,19 +1,8 @@
-
-                "
-"
-                    "
-"Chapter 2"
-"
+**Chapter 2**
 
 # The Math Blueprint – Linear Algebra & Calculus in Java
 
 Build the vectors, matrices, and derivative checks behind every forward and backward pass.
-
-                "
-"
-
-                "
-"
 
 ## What We Are Building
 
@@ -21,21 +10,9 @@ In Chapter 1, a neuron computed a weighted sum and then applied an activation fu
 
 By the end you can copy three complete source files into `src/main/java/com/neuralscratch/math/`, compile them with `javac`, and run an executable check without a third-party test framework. You do not need to know linear algebra beforehand; for each operation, we will start with ordinary numbers, identify the array indices, and then read the Java loop.
 
-                    "
-"
-                        "
-"One convention throughout"
-"
+**One convention throughout**
 
 A vector has a *size*. A matrix has *rows × columns*. Indices start at zero in Java. Operations create new values; no caller receives a reference to the arrays stored inside these classes.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 1. Vectors: One List of Numbers
 
@@ -45,19 +22,11 @@ A **vector** is an ordered collection such as `[2, 3, 4]`. In a network it might
 
 Pair corresponding entries, multiply each pair, then add the products. For `[2, 3, 4]` and `[5, 6, 7]`, the dot product is `2×5 + 3×6 + 4×7 = 56`. A neuron uses exactly this operation to combine its inputs and weights before adding its bias.
 
-                    "
-"a · b = a₀b₀ + a₁b₁ + … + aₙ₋₁bₙ₋₁"
-"
+a · b = a₀b₀ + a₁b₁ + … + aₙ₋₁bₙ₋₁
 
 The **magnitude** is a vector's length: square each entry, sum the squares, and take the square root. **Normalization** divides every entry by that length, producing a vector of length 1. We reject the zero vector because dividing by its length would mean dividing by zero.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/math/Vector.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/math/Vector.java**
 
 ```java
 package com.neuralscratch.math;
@@ -153,18 +122,9 @@ public final class Vector {
 }
 ```
 
-                    "
-"
-
 The constructor and `toArray()` both copy arrays. That small cost makes the public value immutable: changing an input array after construction cannot secretly change your weights. Operations also return new vectors. We can profile and optimize allocations later if a training workload needs it.
 
-                    "
-"
-                        "
-""
-"Example after running jshell --class-path out"
-"Copy"
-"
+**Example after running jshell --class-path out**
 
 ```java
 import com.neuralscratch.math.Vector;
@@ -176,25 +136,11 @@ Vector direction = new Vector(new double[] {3, 4}).normalize();
 // direction holds [0.6, 0.8]; its magnitude is 1.0
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 2. Matrices: A Grid with a Shape
 
 A **matrix** is a rectangular table of numbers. Its **shape** is `rows × columns`. A layer with two input features and three neurons can store its weights in a `2 × 3` matrix: each row belongs to an input feature, each column to an output neuron. A single input can be a `1 × 2` row. Their product will be `1 × 3`.
 
-                    "
-"
-                        "
-""
-"Shapes before arithmetic"
-"Copy"
-"
+**Shapes before arithmetic**
 
 ```
 input (1 × 2)       weights (2 × 3)         output (1 × 3)
@@ -202,22 +148,13 @@ input (1 × 2)       weights (2 × 3)         output (1 × 3)
                       [ 4  5  2 ]
 ```
 
-                    "
-"
-
 We store the matrix as `double[][]`: `data[row][column]`. Each row is an array with the same number of columns. Java does not enforce rectangular arrays, so the `of` factory validates the shape and copies every row. Our zero-filled constructor rejects dimensions that are not positive.
 
 ### The complete `Matrix` class
 
 Read the method names first; then come back to the loops after the worked multiplication below. This is one complete source file, not a collection of placeholders.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/math/Matrix.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/math/Matrix.java**
 
 ```java
 package com.neuralscratch.math;
@@ -417,44 +354,21 @@ public final class Matrix {
 }
 ```
 
-                    "
-"
-
 Only `get` exposes data to callers, and it returns a number, not an array. We fill newly allocated result matrices inside methods but never expose those arrays; the public API behaves like immutable values. Java's ordinary array bounds exceptions handle invalid individual indices.
-
-                "
-"
-
-                "
-"
 
 ## 3. Matrix Multiplication: Many Dot Products at Once
 
 To multiply an `m × n` matrix by an `n × p` matrix, the *inner* dimensions must match. The result has shape `m × p`. Each output cell is a dot product: one row from the left matrix paired with one column from the right.
 
-                    "
-"result[row][col] = Σshared=0…n−1 left[row][shared] × right[shared][col]"
-"
+result[row][col] = Σshared=0…n−1 left[row][shared] × right[shared][col]
 
 For the first cell of our earlier example, `[2, 3] · [1, 4] = 2×1 + 3×4 = 14`. The next cell pairs `[2, 3]` with `[0, 5]`, giving `15`. No mysterious rule is hiding here; the three loops in `multiply` simply repeat this arithmetic for every output cell.
 
 We loop over `row`, then `shared`, then `col`. For a fixed `shared`, that innermost loop walks along a row of the right-hand `double[][]` and a row of the result. This often has better memory locality than repeatedly stepping down columns. It does not change the mathematical answer.
 
-                    "
-"
-                        "
-"Check shapes before values"
-"
+**Check shapes before values**
 
 `2 × 3` times `3 × 4` yields `2 × 4`. `2 × 3` times `2 × 4` is invalid, regardless of the entries. Remember this rule when a future layer reports a dimension mismatch.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 4. Transpose and Reshape: Different Ways to Arrange Data
 
@@ -462,13 +376,7 @@ We loop over `row`, then `shared`, then `col`. For a fixed `shared`, that innerm
 
 **Reshaping** also changes dimensions, but it does *not* swap entries by their coordinates. It reads all entries row by row and writes them into a new shape in the same order. The total entry count must stay the same. Transpose and reshape are not interchangeable.
 
-                    "
-"
-                        "
-""
-"Transpose versus reshape"
-"Copy"
-"
+**Transpose versus reshape**
 
 ```
 Original (2 × 3)       Transpose (3 × 2)       Reshape (3 × 2)
@@ -477,37 +385,22 @@ Original (2 × 3)       Transpose (3 × 2)       Reshape (3 × 2)
                        [ 3  6 ]               [ 5  6 ]
 ```
 
-                    "
-"
-
 To treat a vector as a column matrix, call `Matrix.column(vector)`; to recover it, call `toColumnVector()` on a one-column matrix. We do *not* silently guess whether a vector should be a row or column. A batch of input examples, by contrast, uses one row per example.
-
-                "
-"
-
-                "
-"
 
 ## 5. Element-Wise Arithmetic and Bias Broadcasting
 
 Some operations pair entries in the *same position*. Addition and subtraction work this way. So does the **Hadamard product**: `[[1, 2]]` hadamard `[[3, 4]]` gives `[[3, 8]]`. It is *not* matrix multiplication; both inputs must have exactly the same shape. We will need Hadamard products when combining error signals with activation derivatives.
 
-                        OperationInput shapesResult
-
-                            `add`, `subtract`, `hadamard`identicalsame shape
-                            `multiply``m × n` and `n × p``m × p`
-                            `scale`, `apply`one matrixsame shape
-                            `addRowVector``m × n` and vector of size `n``m × n`
+| Operation | Input shapes | Result |
+| --- | --- | --- |
+| `add`, `subtract`, `hadamard` | identical | same shape |
+| `multiply` | `m × n` and `n × p` | `m × p` |
+| `scale`, `apply` | one matrix | same shape |
+| `addRowVector` | `m × n` and vector of size `n` | `m × n` |
 
 **Broadcasting** means reusing a small value across a larger shape. Here we implement only the rule we need: add one bias vector to *each row* of a matrix. A generic broadcasting engine would be harder to reason about and is unnecessary for our network. `apply` takes a standard-library `DoubleUnaryOperator` and transforms every entry independently.
 
-                    "
-"
-                        "
-""
-"One batched layer step"
-"Copy"
-"
+**One batched layer step**
 
 ```
 Matrix inputs = Matrix.of(new double[][] {{2, 3}, {1, 1}});
@@ -519,16 +412,7 @@ Matrix shifted = weighted.addRowVector(bias); // rows: [15, 14, 10], [6, 4, 4]
 Matrix activated = shifted.apply(value -> Math.max(0.0, value));
 ```
 
-                    "
-"
-
 The last line is a preview of ReLU, an activation function we will revisit later. For now, notice that every calculation already has a visible shape, and a batch of two inputs produces two output rows.
-
-                "
-"
-
-                "
-"
 
 ## 6. Calculus: Measuring How an Output Changes
 
@@ -536,19 +420,11 @@ A **derivative** is a local slope. If `f(x) = x²`, then near `x = 3`, increasin
 
 We can estimate a derivative by measuring the function a tiny step to the left and right. This is called a **central difference**:
 
-                    "
-"f′(x) ≈ [f(x + h) − f(x − h)] / (2h)"
-"
+f′(x) ≈ [f(x + h) − f(x − h)] / (2h)
 
 For a function of several inputs, repeat the measurement once for each coordinate. The following utility makes that procedure explicit. It uses Java SE's `DoubleUnaryOperator` and `ToDoubleFunction`, not an automatic-differentiation library.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/math/Calculus.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/math/Calculus.java**
 
 ```java
 package com.neuralscratch.math;
@@ -590,15 +466,7 @@ public final class Calculus {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"Checking a two-variable gradient"
-"Copy"
-"
+**Checking a two-variable gradient**
 
 ```
 Vector point = new Vector(new double[] {3, 4});
@@ -610,32 +478,17 @@ Vector slope = Calculus.gradient(
 // f(x, y) = x² + y²; slope is approximately [6, 8].
 ```
 
-                    "
-"
-
 ### Why not use finite differences to train?
 
 A gradient for `N` parameters needs `2N` function evaluations with this method. Worse, a step that is too large misses fine detail, while a step that is too small magnifies floating-point rounding. We will use *analytic* derivatives and the **chain rule** for actual learning in Chapter 5; finite differences are a useful independent check on those derivatives.
 
 The chain rule in plain English: if one value changes another, which then changes a third, multiply their two local rates of change. For `g(x) = (2x + 1)²`, the outside slope is `2(2x + 1)` and the inside slope is `2`. At `x = 3`, `g′(3) = 2×7×2 = 28`. Backpropagation repeatedly applies this idea, but no backpropagation engine is needed for this chapter.
 
-                "
-"
-
-                "
-"
-
 ## 7. Test the Math Before Building Neurons
 
 A wrong matrix loop can still produce plausible-looking numbers. Check a small multiplication by hand, test invalid shapes, and verify that a transpose changes dimensions as expected. The following executable test harness needs *only* Java SE. Save it under `src/test/java/com/neuralscratch/math/MathChecks.java`; it throws `AssertionError` on a failed check, even when Java assertions are disabled.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/math/MathChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/math/MathChecks.java**
 
 ```java
 package com.neuralscratch.math;
@@ -771,18 +624,9 @@ public final class MathChecks {
 }
 ```
 
-                    "
-"
-
 From the project root, create an output directory and compile only these four files. This also works without Maven, JUnit, or a module descriptor:
 
-                    "
-"
-                        "
-""
-"Terminal (project root)"
-"Copy"
-"
+**Terminal (project root)**
 
 ```
 mkdir out
@@ -790,21 +634,9 @@ javac -d out src/main/java/com/neuralscratch/math/Vector.java src/main/java/com/
 java -cp out com.neuralscratch.math.MathChecks
 ```
 
-                    "
-"
-
 Expected output: `All math checks passed`. The first multiplication check uses a known result. The seeded loop checks general properties across 50 small matrices: transposing twice and reshaping back must recover the original values. Its fixed seed makes failures repeatable. Try changing one loop index and rerun the checks to see which invariant catches it.
 
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - `Vector`: size validation, arithmetic, dot product, magnitude, normalization, and defensive copies.
 
@@ -813,28 +645,12 @@ Expected output: `All math checks passed`. The first multiplication check uses a
 - `Calculus`: approximate derivatives and gradients for checking the exact derivatives we will write later.
 
 - A repeatable, dependency-free check for representative values, shapes, invalid input, and numerical slopes.
-                    "
-"
-                    "
-"
-                        "
-"Before Chapter 3"
-"
+**Before Chapter 3**
 
 Write down the shape of every intermediate value in `inputs.multiply(weights).addRowVector(bias)`. If you can explain why a single output cell is a dot product, you are ready to build your first neuron.
 
-                    "
-"
-
 Next we will add the bias to one weighted sum, apply Step or Sigmoid, and see exactly what a perceptron can—and cannot—learn. Keep the math classes as they are: they are small enough to inspect whenever a later network result looks wrong.
 
-                "
-"
+[← Previous: Chapter 1](chapter-01.md)
 
-                "
-"
-                    ← Previous: Chapter 1
-                    Next: Chapter 3 – The Architecture of a Neuron →
-                "
-"
-            
+[Next: Chapter 3 – The Architecture of a Neuron →](chapter-03.md)

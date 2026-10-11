@@ -1,70 +1,42 @@
-
-                "
-"
-                    "
-"Chapter 7"
-"
+**Chapter 7**
 
 # Training the Network
 
 Turn one backpropagation step into a repeatable, shuffled, monitored training loop.
 
-                "
-"
-
-                "
-"
-
 ## What We Are Building
 
 `Backpropagation.trainBatch` performs exactly one weight update from one batch. A real model needs thousands of them, over data visited in a fresh random order, with a running record of whether the loss is improving. This chapter builds that outer loop from three small parts:
 
-                        FileRole
-
-                            `training/Dataset.java`A record pairing an input matrix with a target matrix, validated to describe the same samples.
-                            `training/Trainer.java`Shuffles, slices batches, calls `trainBatch`, and returns one average loss per epoch.
-                            `demo/AndGateDemo.java`A small runnable demonstration on the logical AND gate.
-                            `training/TrainerChecks.java`A dependency-free check of batching, shuffling, validation and a falling loss.
+| File | Role |
+| --- | --- |
+| `training/Dataset.java` | A record pairing an input matrix with a target matrix, validated to describe the same samples. |
+| `training/Trainer.java` | Shuffles, slices batches, calls `trainBatch`, and returns one average loss per epoch. |
+| `demo/AndGateDemo.java` | A small runnable demonstration on the logical AND gate. |
+| `training/TrainerChecks.java` | A dependency-free check of batching, shuffling, validation and a falling loss. |
 
 XOR is deliberately absent. It needs a hidden layer, and Chapter 8 is dedicated to it. Here we use AND, which a single neuron can learn.
-
-                "
-"
-
-                "
-"
 
 ## 1. Epochs, Batches, and Iterations
 
 Three words describe a training run, and they are easy to confuse:
-
-                    "
-"
 
 - A **sample** is one row of the dataset: one input vector and its target.
 
 - A **batch** is a small group of samples processed in one call to `trainBatch`, which averages their gradients and makes *one* weight update.
 
 - An **epoch** is one full pass in which every sample appears exactly once.
-                    "
-"
 
 With `N` samples and batch size `S`, an epoch contains `⌈N / S⌉` batches, so that many weight updates (also called iterations). The final batch is smaller when `S` does not divide `N`:
 
-                        Samples NBatch size SBatch sizes in one epochUpdates per epoch
-
-                            422, 22
-                            433, 12
-                            4441 (full-batch)
-                            600032187 batches of 32, then 16188
+| Samples N | Batch size S | Batch sizes in one epoch | Updates per epoch |
+| --- | --- | --- | --- |
+| 4 | 2 | 2, 2 | 2 |
+| 4 | 3 | 3, 1 | 2 |
+| 4 | 4 | 4 | 1 (full-batch) |
+| 6000 | 32 | 187 batches of 32, then 16 | 188 |
 
 Batch size trades noise against cost. A batch of 1 makes a noisy update from a single example; the whole dataset makes the smoothest update but only one per epoch. Medium batches such as 16 to 128 are a common compromise. Because the objectives from Chapters 5 and 6 divide by the number of rows in the batch, the gradient has the same scale whatever batch size you choose.
-
-                "
-"
-
-                "
-"
 
 ## 2. The Dataset Record
 
@@ -72,13 +44,7 @@ A Java `record` is a compact immutable value type. Our `Dataset` holds `inputs` 
 
 The method `select` copies a slice of an index array into fresh matrices through `Matrix.of`. It is how the trainer builds a batch, and it also lets you split data into training and holdout parts later. The slice `[from, to)` may be shorter than the batch size, which is exactly what the final partial batch needs.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/training/Dataset.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/training/Dataset.java**
 
 ```java
 package com.neuralscratch.training;
@@ -129,14 +95,6 @@ public record Dataset(Matrix inputs, Matrix targets) {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 3. Shuffling with Fisher-Yates
 
 If every epoch visits samples in the same order, the model can pick up spurious patterns from that order (for example, all examples of one class arriving last). We reshuffle an array of *indices* at the start of every epoch and leave the data matrices untouched.
@@ -144,12 +102,6 @@ If every epoch visits samples in the same order, the model can pick up spurious 
 The **Fisher-Yates shuffle** walks from the last position down to position 1. At position `last` it picks a random slot among `0…last` (inclusive), swaps it into `last`, and never touches `last` again. Every permutation is equally likely, assuming a fair random source, because there are `n × (n−1) × … × 1 = n!` equally likely sequences of choices and each yields a different permutation. A common mistake, swapping every position with a random slot from the *whole* array, produces `nⁿ` outcomes that cannot be divided evenly among the `n!` permutations, so some orders become more likely than others.
 
 We pass in a `java.util.Random`. Constructing it with a seed such as `new Random(42)` makes the sequence of shuffles reproducible for debugging; a different seed changes the order and the random initial weights. Seeds are for repeatability, not for security.
-
-                "
-"
-
-                "
-"
 
 ## 4. The Trainer
 
@@ -159,26 +111,13 @@ Read `train` from top to bottom. It validates every argument and checks that the
 
 Each loss returned by `trainBatch` is already an average over the rows in that batch. If you averaged those averages directly, a tiny final batch would count as much as a full one. Suppose batches of 3 and 1 samples report losses 0.4 and 0.8. The true per-sample mean is `(3 × 0.4 + 1 × 0.8) / 4 = 0.5`, but a naive mean of the two numbers gives 0.6. We multiply each batch loss by its actual size, sum, and divide by the total number of samples.
 
-                    "
-"
-                        "
-"What the reported number is, and is not"
-"
+**What the reported number is, and is not**
 
 Each batch is scored *before* its own update, but earlier batches in the same epoch have already changed the weights. The epoch value is therefore a running training signal. It is not a final evaluation of the weights you end with, and it says nothing about unseen data.
 
-                    "
-"
-
 Trainer deliberately prints nothing, so tests and applications can decide how to report. It throws `IllegalStateException` if a loss becomes `NaN` or infinite, because continuing would only fill the weights with garbage; the message suggests lowering the learning rate. The helper methods `shuffledIndices` and `batchCount` are public so that the checks can test them directly.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/training/Trainer.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/training/Trainer.java**
 
 ```java
 package com.neuralscratch.training;
@@ -280,36 +219,22 @@ public final class Trainer {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 5. Demo: Learning the AND Gate
 
 The AND gate outputs 1 only when both inputs are 1:
 
-                        x₁x₂target
-
-                            000
-                            010
-                            100
-                            111
+| x₁ | x₂ | target |
+| --- | --- | --- |
+| 0 | 0 | 0 |
+| 0 | 1 | 0 |
+| 1 | 0 | 0 |
+| 1 | 1 | 1 |
 
 A single sigmoid neuron computes `σ(w₁x₁ + w₂x₂ + b)` and answers "1" when `w₁x₁ + w₂x₂ + b > 0`. That condition draws a straight line through the input square. For AND, one line can separate `(1, 1)` from the other three corners, for example when both weights are positive and the bias is negative enough. The data are **linearly separable**, so this one-neuron network *can* represent the answer. Whether gradient descent finds weights in a given run depends on the initial weights, the learning rate and the number of epochs, so the demo prints what it actually measures.
 
 The configuration below uses 4 samples with batch size 2, so each epoch makes 2 updates. It trains for 2000 epochs with learning rate 1.0, uses `MeanSquaredError`, and seeds `Random` with 42. It prints the epoch loss every 400 epochs and then the final prediction for each row, thresholded at 0.5.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/demo/AndGateDemo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/demo/AndGateDemo.java**
 
 ```java
 package com.neuralscratch.demo;
@@ -364,30 +289,13 @@ public final class AndGateDemo {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"Run it (after compiling as in section 7)"
-"Copy"
-"
+**Run it (after compiling as in section 7)**
 
 ```
 java -cp out com.neuralscratch.demo.AndGateDemo
 ```
 
-                    "
-"
-
 What to look for: the first line should say `Batches per epoch: 2`; the loss column should trend downward; and for AND, the predictions for the first three rows should end near 0 and the last row near 1. The exact decimals depend on how your Chapter 4 `DenseLayer.random` draws its initial weights, so this page does not print numbers that would only be true for one implementation. The program reports the count of correct rows, so you do not have to trust a claim: either the final line says `4 / 4` or it does not, and then you experiment with epochs or the learning rate.
-
-                "
-"
-
-                "
-"
 
 ## 6. Shuffling, Holdout Data and Monitoring
 
@@ -395,13 +303,7 @@ What to look for: the first line should say `Batches per epoch: 2`; the loss col
 
 The AND gate has only four possible inputs, and we train on all of them, so "4 / 4" means the model memorized the whole function. That is fine for a demo. For a real problem, keep some samples *out* of training and measure on them afterwards; otherwise a model that memorizes looks perfect. Split first, then train only on the training part. Shuffle indices before splitting if the file is sorted (for instance by class), or the holdout part may contain only one class.
 
-                    "
-"
-                        "
-""
-"A holdout split with the pieces you already have"
-"Copy"
-"
+**A holdout split with the pieces you already have**
 
 ```
 int[] order = Trainer.shuffledIndices(dataset.size(), new Random(123));
@@ -411,15 +313,9 @@ Dataset holdout = dataset.select(order, trainRows, order.length);
 // Train on `train`. Evaluate on `holdout` once, after the hyperparameters are chosen.
 ```
 
-                    "
-"
-
 Repeatedly tuning epochs or learning rate while watching the holdout score gradually leaks that data into your decisions. Chapter 8 returns to this point for MNIST.
 
 ### What to watch while training
-
-                    "
-"
 
 - **Steady decrease** of the epoch loss means the updates are helping. Small bumps are normal because every epoch uses different batches.
 
@@ -428,28 +324,14 @@ Repeatedly tuning epochs or learning rate while watching the holdout score gradu
 - **A rising loss or non-finite loss** usually means the learning rate is too large. The trainer stops with an exception instead of continuing.
 
 - **Loss near zero on training data but poor holdout results** is overfitting.
-                    "
-"
 
 When you log, print only counts, epoch numbers and losses. Do not echo credentials, file contents, or personal data, and avoid dumping full weight matrices into shared logs; a model's weights can leak information about what it was trained on.
-
-                "
-"
-
-                "
-"
 
 ## 7. Checks You Can Run
 
 The checks verify batch arithmetic (including a batch size larger than the dataset and `Integer.MAX_VALUE`), that a shuffle is a permutation and repeatable under a seed, `Dataset` validation, that the last slice contains only the remaining sample, argument validation in `Trainer`, and that the AND-gate loss after 1000 epochs is lower than after the first. They do *not* claim that every possible initialization converges; they claim only a lower loss for the seeded run.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/training/TrainerChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/training/TrainerChecks.java**
 
 ```java
 package com.neuralscratch.training;
@@ -565,15 +447,7 @@ public final class TrainerChecks {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"PowerShell (project root)"
-"Copy"
-"
+**PowerShell (project root)**
 
 ```
 New-Item -ItemType Directory -Force out | Out-Null
@@ -581,15 +455,7 @@ javac -d out (Get-ChildItem -Recurse -Path src -Filter *.java).FullName
 java -cp out com.neuralscratch.training.TrainerChecks
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"macOS / Linux shell (project root)"
-"Copy"
-"
+**macOS / Linux shell (project root)**
 
 ```
 mkdir -p out
@@ -597,59 +463,25 @@ javac -d out $(find src -name "*.java")
 java -cp out com.neuralscratch.training.TrainerChecks
 ```
 
-                    "
-"
-
 It prints the first and last AND-gate epoch losses and, if everything passes, `All trainer checks passed`.
 
-                    "
-"
-                        "
-"Assumptions about earlier chapters"
-"
+**Assumptions about earlier chapters**
 
 As in Chapter 6, the demos use `new Sigmoid()` and `new MeanSquaredError()` with no-argument constructors, `DenseLayer.random(inputSize, outputSize, activation, random)`, `new Network(layer…)`, `network.layers()`, and `network.predict(Matrix)`. `Trainer` relies on `DenseLayer.inputSize()` and `outputSize()` for its shape checks and on `Backpropagation.trainBatch(network, inputs, targets, objective, learningRate)` returning the pre-update mean loss.
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - `Dataset`: a validated, immutable pair of input and target matrices with a slice-copy method.
 
 - `Trainer.train`: seeded Fisher-Yates shuffling, correctly sized final batches, one sample-weighted pre-update loss per epoch, and early failure on divergence.
 
 - An AND-gate demo and checks that report measured behavior without promising convergence for every setting.
-                    "
-"
-                    "
-"
-                        "
-"Before Chapter 8"
-"
+**Before Chapter 8**
 
 Change the AND demo's batch size to 3, then to 4, and compare the printed batch count and the loss curves. Then change `new Random(42)` to another seed and observe how the first-epoch loss changes. You are seeing the role of initialization first-hand.
 
-                    "
-"
-
 Next, we try to teach XOR to a network, learn why it needs a hidden layer, and read the real MNIST digit files to measure accuracy on images the network has never seen.
 
-                "
-"
+[← Previous: Chapter 6](chapter-06.md)
 
-                "
-"
-                    ← Previous: Chapter 6
-                    Next: Chapter 8 →
-                "
-"
-            
+[Next: Chapter 8 →](chapter-08.md)

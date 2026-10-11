@@ -1,19 +1,8 @@
-
-                "
-"
-                    "
-"Chapter 3"
-"
+**Chapter 3**
 
 # The Architecture of a Neuron
 
 Weights, a bias, and an activation function: build one artificial neuron, make it compute OR, and prove why it can never compute XOR.
-
-                "
-"
-
-                "
-"
 
 ## What We Are Building
 
@@ -21,52 +10,27 @@ Chapter 2 gave us `Vector`, `Matrix`, and `Calculus`. In this chapter we use the
 
 You will add five source files to the project:
 
-                    "
-"
-
 - `com.neuralscratch.activation.Activation`: the contract every activation function follows.
 
 - `Step`, `Sigmoid`, and `Identity`: three concrete activations.
 
 - `com.neuralscratch.nn.Neuron`: weights, a bias, and an activation, with shape validation.
-                    "
-"
 
 Then you will run a demo that computes the logical OR function, searches thousands of parameter settings for XOR without success, and a check program that tests every class using only Java SE.
 
-                    "
-"
-                        "
-"Project layout so far"
-"
+**Project layout so far**
 
 Production code lives under `src/main/java`, checks under `src/test/java`, and compiled classes go into `out`. Keep the three Chapter 2 math files exactly as they were; this chapter only adds files.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 1. The Weighted Sum: How a Neuron Listens
 
 Imagine deciding whether to take an umbrella. You look at two clues: *is it cloudy?* (`x₀`) and *did the forecast say rain?* (`x₁`). Each clue matters by a different amount, so you give each one a **weight**. You also have a general tendency to carry an umbrella or not; that tendency is the **bias**. Add everything up and you get the neuron's **pre-activation**, written `z`:
 
-                    "
-"z = w₀x₀ + w₁x₁ + … + wₙ₋₁xₙ₋₁ + b = w · x + b"
-"
+z = w₀x₀ + w₁x₁ + … + wₙ₋₁xₙ₋₁ + b = w · x + b
 
 The first part is exactly the dot product from Chapter 2. With weights `[0.8, 1.5]`, bias `−1.0`, and input `[1, 1]`, we get `z = 0.8×1 + 1.5×1 − 1.0 = 1.3`.
 
-                    "
-"
-                        "
-""
-"Shapes for one neuron"
-"Copy"
-"
+**Shapes for one neuron**
 
 ```
 input   x : Vector of size n      [1.0, 1.0]
@@ -76,20 +40,11 @@ z = w · x + b : one double        1.3
 output a = activation(z) : double
 ```
 
-                    "
-"
-
 The input and weight vectors *must* have the same size. If a neuron expects two clues and receives three, there is no sensible answer, so our `Neuron` will refuse the input with an `IllegalArgumentException` instead of quietly producing a number.
 
 ### Why have a bias at all?
 
 Without a bias, an all-zero input always gives `z = 0`, no matter what the weights are. The bias lets the neuron shift its decision threshold. Geometrically, the weights choose the *direction* of a dividing line and the bias moves that line away from the origin.
-
-                "
-"
-
-                "
-"
 
 ## 2. Activation Functions: Turning a Score into an Output
 
@@ -97,13 +52,7 @@ The pre-activation `z` can be any real number. An activation function `f` maps i
 
 Learning (Chapter 5) also needs each activation's **derivative** `f′(z)`: how much the output changes when `z` changes a tiny bit. So our interface has two methods.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/activation/Activation.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/activation/Activation.java**
 
 ```java
 package com.neuralscratch.activation;
@@ -117,41 +66,19 @@ public interface Activation {
 }
 ```
 
-                    "
-"
-                    "
-"
-                        "
-"Why not @FunctionalInterface?"
-"
+**Why not @FunctionalInterface?**
 
 A functional interface has exactly one abstract method, so a lambda can implement it. An activation is a *pair* of functions that must agree with each other; a lambda could only supply one of them. We therefore write small named classes. When we need just the forward function as a `DoubleUnaryOperator` (for `Matrix.apply`), we pass a method reference such as `activation::apply`.
-
-                    "
-"
-                "
-"
-
-                "
-"
 
 ## 3. Step: The Original Perceptron
 
 The oldest artificial neuron, the **perceptron**, used a hard threshold: output 1 if `z ≥ 0`, otherwise 0.
 
-                    "
-"step(z) = 1 if z ≥ 0, otherwise 0"
-"
+step(z) = 1 if z ≥ 0, otherwise 0
 
 Its graph is flat on both sides with a jump at zero. Flat means the slope is zero everywhere except at the jump, where no slope exists. A zero slope tells a learning algorithm nothing about which way to move the weights, so we make `derivative` fail loudly. Using Step in a network you train with gradients is a programming error, not something to silently tolerate.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/activation/Step.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/activation/Step.java**
 
 ```java
 package com.neuralscratch.activation;
@@ -173,25 +100,11 @@ public final class Step implements Activation {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 4. Identity: Leave the Score Alone
 
 Sometimes we want the raw weighted sum, for example when predicting a temperature or a price that can be any real number. The identity activation returns `z` unchanged. The line `f(z) = z` rises one unit for every unit you move right, so its derivative is always 1.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/activation/Identity.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/activation/Identity.java**
 
 ```java
 package com.neuralscratch.activation;
@@ -211,73 +124,45 @@ public final class Identity implements Activation {
 }
 ```
 
-                    "
-"
-                "
-"
-
-                "
-"
-
 ## 5. Sigmoid: A Smooth Step
 
 The **sigmoid** (also called the logistic function) looks like a step that has been sanded smooth. Large negative `z` gives outputs near 0, large positive `z` gives outputs near 1, and `z = 0` gives exactly 0.5.
 
-                    "
-"σ(z) = 1 / (1 + e−z)"
-"
+σ(z) = 1 / (1 + e^(−z))
 
-                        ze−zσ(z)
-
-                            −454.5980.0180
-                            −12.7180.2689
-                            010.5000
-                            10.3680.7311
-                            40.0180.9820
+| z | e^(−z) | σ(z) |
+| --- | --- | --- |
+| −4 | 54.598 | 0.0180 |
+| −1 | 2.718 | 0.2689 |
+| 0 | 1 | 0.5000 |
+| 1 | 0.368 | 0.7311 |
+| 4 | 0.018 | 0.9820 |
 
 ### Deriving the derivative in plain steps
 
-We want the slope of `σ(z) = (1 + e−z)−1`. Treat it as an outer function `u−1` applied to an inner function `u = 1 + e−z`, and use the chain rule from Chapter 2: outer slope times inner slope.
+We want the slope of `σ(z) = (1 + e^(−z))^(−1)`. Treat it as an outer function `u^(−1)` applied to an inner function `u = 1 + e^(−z)`, and use the chain rule from Chapter 2: outer slope times inner slope.
 
-                    "
-"
+- Outer slope: the derivative of `u^(−1)` is `−u^(−2)`.
 
-- Outer slope: the derivative of `u−1` is `−u−2`.
+- Inner slope: the derivative of `1 + e^(−z)` is `−e^(−z)`.
 
-- Inner slope: the derivative of `1 + e−z` is `−e−z`.
+- Multiply: `σ′(z) = −(1 + e^(−z))^(−2) × (−e^(−z)) = e^(−z) / (1 + e^(−z))²`.
 
-- Multiply: `σ′(z) = −(1 + e−z)−2 × (−e−z) = e−z / (1 + e−z)²`.
+- Split the fraction: `[1 / (1 + e^(−z))] × [e^(−z) / (1 + e^(−z))]`.
 
-- Split the fraction: `[1 / (1 + e−z)] × [e−z / (1 + e−z)]`.
-
-- The first factor is `σ(z)`. The second is `1 − σ(z)`, because `1 − 1/(1+e−z) = e−z/(1+e−z)`.
-                    "
-"
-                    "
-"σ′(z) = σ(z) × (1 − σ(z))"
-"
+- The first factor is `σ(z)`. The second is `1 − σ(z)`, because `1 − 1/(1+e^(−z)) = e^(−z)/(1+e^(−z))`.
+σ′(z) = σ(z) × (1 − σ(z))
 
 This is convenient: once we know the output, the slope costs one subtraction and one multiplication. At `z = 0` the slope is `0.5 × 0.5 = 0.25`, its largest value. Far from zero the curve flattens and the slope approaches 0; this *saturation* will matter when we discuss vanishing gradients and ReLU in Chapter 6.
 
 ### Computing it safely in floating point
 
-A `double` can hold numbers up to about `1.8 × 10³⁰⁸`. `Math.exp(710)` is already larger, so it returns `Infinity`. The textbook formula with `z = −1000` evaluates `Math.exp(1000)`. Here Java happens to compute `1 / Infinity = 0`, but the algebraically equivalent form `ez/(1 + ez)` at `z = +1000` becomes `Infinity / Infinity = NaN`, and a single `NaN` spreads through every later calculation. We avoid infinities entirely by choosing the form whose exponent is never positive:
+A `double` can hold numbers up to about `1.8 × 10³⁰⁸`. `Math.exp(710)` is already larger, so it returns `Infinity`. The textbook formula with `z = −1000` evaluates `Math.exp(1000)`. Here Java happens to compute `1 / Infinity = 0`, but the algebraically equivalent form `e^z/(1 + e^z)` at `z = +1000` becomes `Infinity / Infinity = NaN`, and a single `NaN` spreads through every later calculation. We avoid infinities entirely by choosing the form whose exponent is never positive:
 
-                    "
-"
+- For `z ≥ 0`: use `1 / (1 + e^(−z))`. Here `−z ≤ 0`, so `e^(−z)` lies between 0 and 1.
 
-- For `z ≥ 0`: use `1 / (1 + e−z)`. Here `−z ≤ 0`, so `e−z` lies between 0 and 1.
-
-- For `z z` to get `ez / (1 + ez)`. Here `z z` lies between 0 and 1.
-                    "
-"
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/activation/Sigmoid.java"
-"Copy"
-"
+- For `z < 0`: use `e^z / (1 + e^z)`. Here `e^z` lies between 0 and 1.
+**src/main/java/com/neuralscratch/activation/Sigmoid.java**
 
 ```java
 package com.neuralscratch.activation;
@@ -303,28 +188,13 @@ public final class Sigmoid implements Activation {
 }
 ```
 
-                    "
-"
-
 For very large `|z|` the derivative rounds to exactly 0.0 (for example, `σ(40)` is 1.0 in `double`). That is a harmless underflow: the true slope is around `10⁻¹⁸`, far below anything that could move a weight.
-
-                "
-"
-
-                "
-"
 
 ## 6. The `Neuron` Class
 
 A neuron stores a weight vector, a bias, and an activation. It exposes the pre-activation as `weightedSum` (handy for explanations and debugging) and the output as `predict`. All fields are final and `Vector` is immutable, so a `Neuron` is an immutable value; training in later chapters happens on layers, not on this class.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/nn/Neuron.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/nn/Neuron.java**
 
 ```java
 package com.neuralscratch.nn;
@@ -381,27 +251,18 @@ public final class Neuron {
 }
 ```
 
-                    "
-"
-
 `Vector.dot` would also reject mismatched sizes, but checking here produces a message phrased in neuron terms ("expects 2 inputs"), which is far easier to diagnose inside a larger program.
-
-                "
-"
-
-                "
-"
 
 ## 7. Computing OR by Hand
 
 Logical OR outputs 1 when at least one input is 1. Choose weights `[1, 1]`, bias `−0.5`, and the Step activation:
 
-                        x₀x₁z = x₀ + x₁ − 0.5step(z)OR
-
-                            00−0.500
-                            010.511
-                            100.511
-                            111.511
+| x₀ | x₁ | z = x₀ + x₁ − 0.5 | step(z) | OR |
+| --- | --- | --- | --- | --- |
+| 0 | 0 | −0.5 | 0 | 0 |
+| 0 | 1 | 0.5 | 1 | 1 |
+| 1 | 0 | 0.5 | 1 | 1 |
+| 1 | 1 | 1.5 | 1 | 1 |
 
 Every row matches. Changing the bias to `−1.5` gives AND instead, because now both inputs must be on to push `z` above zero. With weights `[−1, −1]` and bias `1.5` you get NAND (NOT AND). Keep these three in mind; we will combine them shortly.
 
@@ -409,13 +270,7 @@ Every row matches. Changing the bias to `−1.5` gives AND instead, because now 
 
 The neuron fires when `w₀x₀ + w₁x₁ + b ≥ 0`. The boundary `w₀x₀ + w₁x₁ + b = 0` is a straight line in the plane of inputs. For OR it is `x₀ + x₁ = 0.5`: the point (0, 0) lies on one side, the other three corners on the other side.
 
-                    "
-"
-                        "
-""
-"OR is linearly separable"
-"Copy"
-"
+**OR is linearly separable**
 
 ```
 x1
@@ -428,36 +283,21 @@ x1
 The line x0 + x1 = 0.5 passes between (0, 0) and the other three points.
 ```
 
-                    "
-"
-
 A Sigmoid neuron draws the same kind of line; it just reports a smooth confidence instead of a hard 0/1. With weights `[4, 4]` and bias `−2`, the outputs are about 0.12 for (0, 0) and 0.88 or higher for the other inputs.
-
-                "
-"
-
-                "
-"
 
 ## 8. Why One Neuron Cannot Compute XOR
 
 XOR ("exclusive or") outputs 1 when *exactly one* input is 1. Its truth table is OR with the last row flipped: (1, 1) → 0. On the grid, the 1s sit at opposite corners (0, 1) and (1, 0), the 0s at (0, 0) and (1, 1). Try to draw one straight line with both 1s on one side and both 0s on the other; you cannot.
 
-                    "
-"
-                        "
-"A four-line proof"
-"
+**A four-line proof**
 
 Suppose a step neuron with weights `w₀, w₁` and bias `b` computes XOR. Each row gives an inequality:
 
-                        "
-"
-
-- (0, 0) → 0 requires `b  0`, so `w₀ + w₁ + b > 0`. That contradicts line 4. No weights and bias can satisfy all four rows.
-
-                    "
-"
+- `(0, 0) → 0` requires `b ≤ 0`.
+- `(0, 1) → 1` requires `w₁ + b > 0`.
+- `(1, 0) → 1` requires `w₀ + b > 0`.
+- `(1, 1) → 0` requires `w₀ + w₁ + b ≤ 0`.
+Adding lines 2 and 3 gives `w₀ + w₁ + 2b > 0`; subtracting line 4 yields `b > 0`, which contradicts line 1. No weights and bias can satisfy all four rows.
 
 The same argument applies to Sigmoid if we read "output ≥ 0.5" as 1, because `σ(z) ≥ 0.5` exactly when `z ≥ 0`. The limitation is not the activation; it is that a single neuron can only draw *one straight line*. Problems whose classes can be split by such a line (or, in higher dimensions, a flat *hyperplane*) are called **linearly separable**. XOR is not.
 
@@ -465,23 +305,11 @@ The same argument applies to Sigmoid if we read "output ≥ 0.5" as 1, because `
 
 Notice that `XOR(x₀, x₁) = AND(OR(x₀, x₁), NAND(x₀, x₁))`. We already have neurons for OR, NAND, and AND. If two neurons compute OR and NAND side by side, and a third neuron ANDs their outputs, the combination computes XOR. The first two form a **hidden layer**; Chapter 4 builds exactly this structure with matrices, and Chapter 5 shows how a network can discover such weights on its own.
 
-                "
-"
-
-                "
-"
-
 ## 9. A Runnable Demo
 
 The demo builds the OR neuron, a Sigmoid version, and an Identity neuron, then performs a brute-force search over 15,625 step neurons (each weight and the bias range from −3 to 3 in steps of 0.25). The proof says no neuron can get all four XOR rows right; the search lets you see that for yourself.
 
-                    "
-"
-                        "
-""
-"src/main/java/com/neuralscratch/examples/Chapter3Demo.java"
-"Copy"
-"
+**src/main/java/com/neuralscratch/examples/Chapter3Demo.java**
 
 ```java
 package com.neuralscratch.examples;
@@ -551,18 +379,9 @@ public final class Chapter3Demo {
 }
 ```
 
-                    "
-"
-
 Expected output:
 
-                    "
-"
-                        "
-""
-"Output"
-"Copy"
-"
+**Output**
 
 ```
 OR with a step neuron: weights [1, 1], bias -0.5
@@ -579,28 +398,13 @@ Identity neuron on [3, 4]: 2.50
 Tried 15625 step neurons on XOR; best score: 3 of 4
 ```
 
-                    "
-"
-
 `printf` uses your default locale, so some systems print a comma instead of a decimal point. The numbers are the same.
-
-                "
-"
-
-                "
-"
 
 ## 10. Checks Without a Test Framework
 
 As in Chapter 2, a plain `main` method throws `AssertionError` on the first failure. The checks cover known Sigmoid values, behaviour at extreme inputs (finite, no `NaN`), agreement between each analytic derivative and the numerical `Calculus.derivative`, the Step derivative exception, the OR truth table, and shape validation.
 
-                    "
-"
-                        "
-""
-"src/test/java/com/neuralscratch/nn/NeuronChecks.java"
-"Copy"
-"
+**src/test/java/com/neuralscratch/nn/NeuronChecks.java**
 
 ```java
 package com.neuralscratch.nn;
@@ -700,18 +504,9 @@ public final class NeuronChecks {
 }
 ```
 
-                    "
-"
-
 Compile every source file into `out`, then run the demo and the checks. Using a list of all sources means you do not need to update the command each time a chapter adds files.
 
-                    "
-"
-                        "
-""
-"Terminal (macOS/Linux, project root)"
-"Copy"
-"
+**Terminal (macOS/Linux, project root)**
 
 ```
 find src -name "*.java" > sources.txt
@@ -720,15 +515,7 @@ java -cp out com.neuralscratch.examples.Chapter3Demo
 java -cp out com.neuralscratch.nn.NeuronChecks
 ```
 
-                    "
-"
-                    "
-"
-                        "
-""
-"Terminal (Windows PowerShell, project root)"
-"Copy"
-"
+**Terminal (Windows PowerShell, project root)**
 
 ```
 Get-ChildItem -Recurse -Filter *.java src | ForEach-Object { '"' + ($_.FullName -replace '\\', '/') + '"' } | Set-Content sources.txt
@@ -737,21 +524,9 @@ java -cp out com.neuralscratch.examples.Chapter3Demo
 java -cp out com.neuralscratch.nn.NeuronChecks
 ```
 
-                    "
-"
-
 Expected final line from the checks: `All neuron checks passed`. Try breaking the code on purpose: replace the stable Sigmoid with the naive `Math.exp(z) / (1 + Math.exp(z))` and watch the extreme-value check fail at `z = 1000`.
 
-                "
-"
-
-                "
-"
-
 ## What You Now Have
-
-                    "
-"
 
 - An `Activation` contract pairing each function with its derivative.
 
@@ -760,25 +535,10 @@ Expected final line from the checks: `All neuron checks passed`. Try breaking th
 - An immutable `Neuron` computing `f(w · x + b)` with shape validation.
 
 - A proof that one neuron draws one straight boundary, so it handles OR and AND but never XOR.
-                    "
-"
-                    "
-"
-                        "
-"Before Chapter 4"
-"
+**Before Chapter 4**
 
 On paper, compute the XOR network built from OR, NAND, and AND neurons for all four inputs. In the next chapter, you will express those three neurons as two small matrices and run the same calculation for a whole batch at once.
 
-                    "
-"
-                "
-"
+[← Previous: Chapter 2](chapter-02.md)
 
-                "
-"
-                    ← Previous: Chapter 2
-                    Next: Chapter 4 →
-                "
-"
-            
+[Next: Chapter 4 →](chapter-04.md)
